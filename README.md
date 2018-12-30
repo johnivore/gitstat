@@ -2,7 +2,11 @@
 
 ## About
 
-`gitstat` is a simple tool to check if your git repos have local changes and succinctly output a summary.  It checks:
+`gitstat` is a simple tool to check if your git repos have local changes and succinctly output a summary.
+
+![(screenshot)](images/screenshots/screenshot.png?raw=true "Basic usage")
+
+`gitstat` checks:
 
 * unstaged changes in the working tree
 * uncommitted changes in the index
@@ -10,7 +14,7 @@
 * unpushed commits
 * if a pull from upstream is required
 
-`gitstat` can optionally fetch changes from upstream, and has a few other features to improve the quality of life when dealing with many git repositories.  It uses multiple processes to speed up checks, and will try to continue even if there is a problem with a repository.
+`gitstat` can optionally fetch changes from upstream, and has a few other features to improve quality of life when dealing with many git repositories.  It uses multiple processes to speed up checks, and will try to continue even if there is a problem with a repository.
 
 
 ## Requirements
