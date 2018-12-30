@@ -367,6 +367,10 @@ def main():
                         action='store_true',
                         default=False,
                         help='be quiet; return 1 if any repo has changes, else return 0')
+    parser.add_argument('--progress',
+                        action='store_true',
+                        default=False,
+                        help='show progress bar')
     args = parser.parse_args()
 
     config = configparser.ConfigParser()
@@ -454,9 +458,8 @@ def main():
             new_path_list.append(path)
     output = []
     exit_code = None
-    show_progress_bar = False
     with Pool(processes=cpu_count()) as pool:
-        if show_progress_bar:
+        if args.progress:
             length = len(new_path_list)
             num_processed = 0
             progress(num_processed, length)
@@ -479,7 +482,7 @@ def main():
             elif result:
                 # this repo has changes; add them to the output list
                 output.append(result)
-            if show_progress_bar:
+            if args.progress:
                 num_processed += 1
                 progress(num_processed, length)
 
@@ -488,7 +491,7 @@ def main():
         exit(exit_code)
 
     # clear progress bar
-    if show_progress_bar:
+    if args.progress:
         print('\r\x1b[2K', end='\r')
 
     # everything went as expected!
