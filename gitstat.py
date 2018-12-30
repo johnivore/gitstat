@@ -376,9 +376,9 @@ def main():
     config = configparser.ConfigParser()
     # get config file location
     if 'XDG_CONFIG_HOME' in os.environ:
-        config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstatrc')
+        config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
     else:
-        config_filename = Path(Path.home(), '.config', 'gitstatrc')
+        config_filename = Path(Path.home(), '.config', 'gitstat.conf')
     if config_filename.is_file():
         config.read(config_filename)
 
