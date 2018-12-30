@@ -27,19 +27,15 @@
 
 It's just one Python script, so you could do something like:
 
-```
-cp gitstat.py ~/bin/gitstat && chmod +x ~/bin/gitstat
-```
+    cp gitstat.py ~/bin/gitstat && chmod +x ~/bin/gitstat
 
 
 ## Getting started
 
 ### Track a repo
 
-```
-gitstat track ~/workspace/myproject
-gitstat track .
-```
+    gitstat track ~/workspace/myproject
+    gitstat track .
 
 (Relative paths are converted to absolute paths in `gitstat`'s config file.)
 
@@ -47,13 +43,11 @@ Now do something like edit/add files, or commit (but don't push) changes, and ru
 
 ### Track a bunch of repos
 
-```
-gitstat track ~/workspace/project1 ~/workspace/project2 ...
-```
+    gitstat track ~/workspace/project1 ~/workspace/project2 ...
 
-```
-find ~/ -type d -name .git -exec gitstat track {} \;
-```
+Track every repo in your home directory:
+
+    find ~/ -type d -name .git -exec gitstat track {} \;
 
 (`gitstat` is "smart" enough to know that the parent directory of a directory ending in `/.git` is the actual repository.)
 
@@ -61,33 +55,23 @@ find ~/ -type d -name .git -exec gitstat track {} \;
 
 Show repos with local/unpushed changes:
 
-```
-gitstat
-```
+    gitstat
 
 Include repos that are up-to-date:
 
-```
-gitstat --all
-```
+    gitstat --all
 
 Fetch changes from upstream:
 
-```
-gitstat --fetch
-```
+    gitstat --fetch
 
 Check only some of your repos:
 
-```
-gitstat check /pato/to/repo /path/to/another/repo ...
-```
+    gitstat check /pato/to/repo /path/to/another/repo ...
 
 There are more options.  Show help:
 
-```
-gitstat --help
-```
+    gitstat --help
 
 
 ## Tips & tricks
@@ -97,7 +81,7 @@ gitstat --help
 * Similar to `git`, `gitstat --quiet` prints no output (except on error), and returns 1 if there are changes, else 0.
 * `gitstat --if-changes-output something` will return "`something`" if there are changes, else nothing.  Unlike`--quiet`, this will return 0 (except on error).  For example, to add an "!" icon to the i3blocks bar if any of your repos have local changes, add the following to `~/.i3blocks.conf`:
 
-```
+```ini
 [gitstat]
 command=~/bin/gitstat --if-changes-output "!"
 interval=300
@@ -112,24 +96,18 @@ interval=300
 
 Passing a path to `gitstat` that it is not tracking will output "`not tracked by gitstat`", so:
 
-```
-find ~/ -type d -name .git | xargs gitstat check
-```
+    find ~/ -type d -name .git | xargs gitstat check
 
 
 ## Handling upstream URL changes
 
 The normal `gitstat` output will check if the upstream origin URL matches the URL in the `gitstat` config file and print an alert if they don't match.  `gitstat` can automatically update the origin URL in its config with `gitstat update`:
 
-```
-gitstat update /path/to/myproject
-```
+    gitstat update /path/to/myproject
 
 or to update the origin URL for all tracked repos:
 
-```
-gitstat update
-```
+    gitstat update
 
 
 ## Config file
