@@ -35,7 +35,6 @@ It's just one Python script, so you could do something like:
 ### Track a repo
 
     gitstat track ~/workspace/myproject
-    gitstat track .
 
 (Relative paths are converted to absolute paths in `gitstat`'s config file.)
 
@@ -79,13 +78,6 @@ There are more options.  Show help:
 ### Using with scripts
 
 * Similar to `git`, `gitstat --quiet` prints no output (except on error), and returns 1 if there are changes, else 0.
-* `gitstat --if-changes-output something` will return "`something`" if there are changes, else nothing.  Unlike`--quiet`, this will return 0 (except on error).  For example, to add an "!" icon to the i3blocks bar if any of your repos have local changes, add the following to `~/.i3blocks.conf`:
-
-```ini
-[gitstat]
-command=~/bin/gitstat --if-changes-output "!"
-interval=300
-```
 
 ### Clone missing repos
 
@@ -112,4 +104,4 @@ or to update the origin URL for all tracked repos:
 
 ## Config file
 
-The config file, which contains the list of tracked repos, is located at `$XDG_CONFIG_HOME/gitstatrc` (usually `~/.config/gitstatrc`).
+The config file, which contains the list of tracked repos, is located at `$XDG_CONFIG_HOME/gitstat.conf` (usually `~/.config/gitstat.conf`).

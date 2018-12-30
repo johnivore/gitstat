@@ -200,7 +200,7 @@ def get_repo_url(path):
 def checkrepo(path):
     # these were previously passed as arguments
     even_if_uptodate = args.all
-    return_bool = args.quiet or (True if args.if_changes_output else False)
+    return_bool = args.quiet
     do_fetch = args.fetch
     changes = []
     pull_required = False
@@ -367,10 +367,6 @@ def main():
                         action='store_true',
                         default=False,
                         help='be quiet; return 1 if any repo has changes, else return 0')
-    parser.add_argument('--if-changes-output',
-                        type=str,
-                        metavar='string',
-                        help="""If there are changes, print this text (else nothing); unlike --quiet, return 0 (except on error)""")
     args = parser.parse_args()
 
     config = configparser.ConfigParser()
@@ -458,7 +454,6 @@ def main():
             new_path_list.append(path)
     output = []
     exit_code = None
-    # show_progress_bar = not (args.quiet or args.if_changes_output)
     show_progress_bar = False
     with Pool(processes=cpu_count()) as pool:
         if show_progress_bar:
@@ -472,12 +467,7 @@ def main():
                 pool.terminate()
                 break
             elif type(result) is bool and result:
-                if args.if_changes_output:
-                    print(args.if_changes_output)
-                    exit_code = 0
-                    pool.terminate()
-                    break
-                elif args.quiet:
+                if args.quiet:
                     exit_code = 1
                     pool.terminate()
                     break
