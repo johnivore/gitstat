@@ -28,7 +28,7 @@ import configparser
 from operator import itemgetter
 
 
-color_formatter = {'unstaged': '\033[0;33m{}\033[0m',
+COLOR_FORMATTER = {'unstaged': '\033[0;33m{}\033[0m',
                    'uncommitted': '\033[0;33m{}\033[0m',
                    'untracked': '\033[0;31m{}\033[0m',
                    'unpushed': '\033[0;36m{}\033[0m',
@@ -60,6 +60,11 @@ def progress(iteration, total):
     progressbar(iteration, total, prefix='Progress:', suffix='Complete', length=50)
 
 
+def write_config_file():
+    with open(config_filename, 'w') as file_writer:
+        config.write(file_writer)
+
+
 def fetch(path):
     result = subprocess.run(['git',
                              'fetch',
@@ -69,7 +74,7 @@ def fetch(path):
                             stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git fetch" output follows:', result.stdout, result.stderr)
-        return color_formatter['untracked'].format('error fetching')
+        return COLOR_FORMATTER['untracked'].format('error fetching')
 
 
 def get_local(path):
@@ -100,7 +105,7 @@ def get_remote(path, upstream='@{u}'):
         err = result.stderr.decode().strip()
         if 'no upstream configured' in err:
             # fatal: no upstream configured for branch 'dummy'
-            changes = color_formatter['pull-required'].format('no matching upstream branch')
+            changes = COLOR_FORMATTER['pull-required'].format('no matching upstream branch')
         else:
             print_error('error doing "rev-parse {}"; aborting'.format(upstream), path, result.stdout, result.stderr)
             return 1
@@ -142,7 +147,7 @@ def check_unstaged_changes(path):
                              '--ignore-submodules'],
                             cwd=path)
     if result.returncode != 0:
-        return color_formatter['unstaged'].format('unstaged changes')
+        return COLOR_FORMATTER['unstaged'].format('unstaged changes')
 
 
 def check_uncommitted_changes(path):
@@ -155,7 +160,7 @@ def check_uncommitted_changes(path):
                              '--ignore-submodules'],
                             cwd=path)
     if result.returncode != 0:
-        return color_formatter['uncommitted'].format('uncommitted changes')
+        return COLOR_FORMATTER['uncommitted'].format('uncommitted changes')
 
 
 def check_untracked_files(path):
@@ -167,8 +172,8 @@ def check_untracked_files(path):
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
-    if len(result.stdout) > 0:
-        return color_formatter['untracked'].format('untracked files')
+    if result.stdout:
+        return COLOR_FORMATTER['untracked'].format('untracked files')
 
 
 def check_unpushed_commits(path):
@@ -181,7 +186,7 @@ def check_unpushed_commits(path):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     if result.returncode != 0:
-        return color_formatter['unpushed'].format('unpushed commits')
+        return COLOR_FORMATTER['unpushed'].format('unpushed commits')
 
 
 def get_repo_url(path):
@@ -209,14 +214,14 @@ def checkrepo(path):
     origin_url = get_repo_url(path)
     if not origin_url:
         print_error('error getting git URL', path)
-        changes.append(color_formatter['untracked'].format('origin URL error'))
+        changes.append(COLOR_FORMATTER['untracked'].format('origin URL error'))
         do_fetch = False
     else:
         if origin_url != config[path]['url']:
             print_error(path, 'URL mismatch')
             print('  gitstat: {}'.format(config[path]['url']))
             print('  origin:  {}'.format(origin_url))
-            changes.append(color_formatter['untracked'].format('origin URL mismatch (fix with "gitstat update")'))
+            changes.append(COLOR_FORMATTER['untracked'].format('origin URL mismatch (fix with "gitstat update")'))
             do_fetch = False
     # fetch from upstream
     if do_fetch:
@@ -235,13 +240,13 @@ def checkrepo(path):
         if local == remote:
             pass  # up-to-date
         elif local == base:
-            changes.append(color_formatter['pull-required'].format('pull required'))
+            changes.append(COLOR_FORMATTER['pull-required'].format('pull required'))
             pull_required = True
         elif remote == base:
             pass  # need to push - later we'll do a git diff which will catch this and other situations)
         else:
             # diverged - shouldn't ever see this?
-            changes.append(color_formatter['unpushed'].format('DIVERGED'))
+            changes.append(COLOR_FORMATTER['unpushed'].format('DIVERGED'))
     update_index(path)
     result = check_unstaged_changes(path)
     if result:
@@ -263,7 +268,7 @@ def checkrepo(path):
         return True if changes else False
     # --all
     if not changes and even_if_uptodate:
-        changes.append(color_formatter['up-to-date'].format('up-to-date'))
+        changes.append(COLOR_FORMATTER['up-to-date'].format('up-to-date'))
     # if something changed, return the changes; else nothing
     if changes:
         return {'path': path, 'changes': changes}
@@ -287,8 +292,7 @@ def track(path):
     # add it to config file
     config.add_section(path)
     config[path]['url'] = url
-    with open(config_filename, 'w') as f:
-        config.write(f)
+    write_config_file()
 
 
 def untrack(path):
@@ -297,8 +301,7 @@ def untrack(path):
         print_error('already not being tracked', path)
         return
     config.remove_section(path)
-    with open(config_filename, 'w') as f:
-        config.write(f)
+    write_config_file()
 
 
 def ignore(path):
@@ -310,8 +313,7 @@ def ignore(path):
         print_error('already ignored', path)
         return
     config[path]['ignore'] = 'true'
-    with open(config_filename, 'w') as f:
-        config.write(f)
+    write_config_file()
 
 
 def update_url(path):
@@ -324,8 +326,7 @@ def update_url(path):
         print('  old: {}'.format(config[path]['url']))
         print('  new: {}'.format(origin_url))
         config[path]['url'] = origin_url
-        with open(config_filename, 'w') as f:
-            config.write(f)
+        write_config_file()
 
 # -------------------------------------------------
 
@@ -385,8 +386,7 @@ def main():
     # add DEFAULT section to config if missing
     if not config.has_section('DEFAULT'):
         config['DEFAULT'] = {'ignore': 'false'}
-        with open(config_filename, 'w') as f:
-            config.write(f)
+        write_config_file()
 
     if args.command == 'showclone' and args.path:
         print_error('"showclone" doesn\'t take any paths as arguments')  # but could it?  probably shouldn't
@@ -414,7 +414,7 @@ def main():
 
     # for all functions after this point, we need to know what repos we're tracking
     tracked_paths = [x for x in config.sections() if x != 'DEFAULT']
-    if len(tracked_paths) == 0:
+    if not tracked_paths:
         print('No git repos are being tracked.')
         print('To track a repo:')
         print('    gitstat track </path/to/myproject>')
@@ -464,12 +464,12 @@ def main():
             num_processed = 0
             progress(num_processed, length)
         for result in pool.imap_unordered(checkrepo, new_path_list, chunksize=1):
-            if type(result) is int and result == 1:
+            if isinstance(result, int) and result == 1:
                 # there was an error; terminate threads and exit
                 exit_code = 1
                 pool.terminate()
                 break
-            elif type(result) is bool and result:
+            elif isinstance(result, bool) and result:
                 if args.quiet:
                     exit_code = 1
                     pool.terminate()
@@ -487,7 +487,7 @@ def main():
                 progress(num_processed, length)
 
     # are we supposed to exit with a specific return code?
-    if type(exit_code) is int and exit_code in [0, 1]:
+    if isinstance(exit_code, int) and exit_code in [0, 1]:
         exit(exit_code)
 
     # clear progress bar
