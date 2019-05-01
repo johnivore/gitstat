@@ -356,19 +356,19 @@ def main():
                         nargs=argparse.REMAINDER,
                         default=[],
                         help='path1 path2 pathN...')
-    parser.add_argument('--fetch',
+    parser.add_argument('--fetch', '-f',
                         action='store_true',
                         default=False,
                         help='run "git fetch" on all repos')
-    parser.add_argument('--all',
+    parser.add_argument('--all', '-a',
                         action='store_true',
                         default=False,
                         help='show all tracked repos regardless if they have changes')
-    parser.add_argument('--quiet',
+    parser.add_argument('--quiet', '-q',
                         action='store_true',
                         default=False,
                         help='be quiet; return 1 if any repo has changes, else return 0')
-    parser.add_argument('--progress',
+    parser.add_argument('--progress', '-p',
                         action='store_true',
                         default=False,
                         help='show progress bar')
