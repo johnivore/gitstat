@@ -3,7 +3,7 @@
 """
 gitstat.py
 
-Copyright 2018  John Begenisich
+Copyright 2019  John Begenisich
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ COLOR_FORMATTER = {'unstaged': '\033[0;33m{}\033[0m',
                    'uncommitted': '\033[0;33m{}\033[0m',
                    'untracked': '\033[0;31m{}\033[0m',
                    'unpushed': '\033[0;36m{}\033[0m',
-                   'pull-required': '\033[1;35m{}\033[0m',
+                   'pull-required': '\033[1;34m{}\033[0m',
                    'up-to-date': '\033[0;32m{}\033[0m',
                    }
 
