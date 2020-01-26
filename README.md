@@ -14,7 +14,7 @@
 * unpushed commits
 * if a pull from upstream is required
 
-`gitstat` can optionally fetch changes from upstream, and has a few other features to improve quality of life when dealing with many git repositories.  It uses multiple processes to speed up checks, and will try to continue even if there is a problem with a repository.
+`gitstat` can optionally fetch or pull changes from upstream, and has a few other features to improve quality of life when dealing with many git repositories.  It uses multiple processes to speed things up, and will try to continue even if there is a problem with a repository.
 
 
 ## Requirements
@@ -44,11 +44,12 @@ Now do something like edit/add files, or commit (but don't push) changes, and ru
 
     gitstat track ~/workspace/project1 ~/workspace/project2 ...
 
-Track every repo in your home directory:
+### Track every repo in your home directory
 
     find ~/ -type d -name .git -exec gitstat track {} \;
 
 (`gitstat` is "smart" enough to know that the parent directory of a directory ending in `/.git` is the actual repository.)
+
 
 ## Usage
 
@@ -64,7 +65,7 @@ Fetch from upstream:
 
     gitstat fetch
 
-Pull from upstream (only if there are no local changes):
+Fetch from upstream, then pull (if there are no local changes):
 
     gitstat pull
 
