@@ -189,8 +189,7 @@ def check_untracked_files(path: str) -> bool:
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
-    if result.stdout:
-        return True
+    return True if result.stdout else False
 
 
 def check_unpushed_commits(path: str) -> bool:
