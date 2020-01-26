@@ -60,9 +60,13 @@ Include repos that are up-to-date:
 
     gitstat --all
 
-Fetch changes from upstream:
+Fetch from upstream:
 
-    gitstat --fetch
+    gitstat fetch
+
+Pull from upstream (only if there are no local changes):
+
+    gitstat pull
 
 Check only some of your repos:
 
