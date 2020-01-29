@@ -393,7 +393,7 @@ def main():
                         default='check',
                         choices=('check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch', 'pull'),
                         help='An optional <command> can be specified:\n'
-                             '  check path...     default functionality; check git repos in one or more directories\n'
+                             '  check [path...]   default functionality; check git repos in one or more directories\n'
                              '  track path...     track one more more repos in one or more directories\n'
                              '  untrack path...   untrack one more more repos in one or more directories\n'
                              '  ignore path...    don\'t include one or more directories in future output (but it is still included with "--all")\n'
