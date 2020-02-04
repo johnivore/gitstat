@@ -28,6 +28,7 @@ from pathlib import Path
 import argparse
 import configparser
 from operator import itemgetter
+from textwrap import dedent
 
 
 OUTPUT_MESSAGES = {'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
@@ -459,9 +460,13 @@ def main():
     # for all functions after this point, we need to know what repos we're tracking
     tracked_paths = [x for x in config.sections() if x != 'DEFAULT']
     if not tracked_paths:
-        print('No git repos are being tracked.')
-        print('To track a repo:')
-        print('    gitstat track </path/to/myproject>')
+        print(dedent("""
+            No git repos are being tracked. To track a repo:
+
+                gitstat track </path/to/my/project>
+
+            Then run gitstat with no arguments.
+            """.lstrip('\n')))
         sys.exit()
 
     # if one or more paths are passed as arguments, use those (instead of all tracked repos)
