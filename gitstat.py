@@ -57,10 +57,10 @@ def print_error(message: str, repo_path=None, stdout=None, stderr=None):
 
 
 def progressbar(iteration: int, total: int, prefix='', suffix='', decimals=0, length=100, blank='-', fill='#'):
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / total))
+    percent = ('{0:.' + str(decimals) + 'f}').format(100 * (iteration / total))
     filled_length = int(length * iteration / total)
     prog_bar = fill * filled_length + blank * (length - filled_length)
-    print('%s [%s] %s%% %s' % (prefix, prog_bar, percent, suffix), end='\r')
+    print(f'{prefix} [{prog_bar}] {percent}% {suffix}', end='\r')
 
 
 def progress(prefix: str, iteration: int, total: int):
@@ -73,9 +73,7 @@ def write_config_file():
 
 
 def fetch(path: str):
-    result = subprocess.run(['git',
-                             'fetch',
-                             '--quiet'],
+    result = subprocess.run(['git', 'fetch', '--quiet'],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -86,9 +84,7 @@ def fetch(path: str):
 
 def pull(path: str):
     print('pulling', path)
-    result = subprocess.run(['git',
-                             'pull',
-                             '--quiet'],
+    result = subprocess.run(['git', 'pull', '--quiet'],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -98,9 +94,7 @@ def pull(path: str):
 
 
 def get_local(path: str):
-    result = subprocess.run(['git',
-                             'rev-parse',
-                             '@'],
+    result = subprocess.run(['git', 'rev-parse', '@'],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -113,9 +107,7 @@ def get_local(path: str):
 def get_remote(path: str, upstream='@{u}'):
     # find upstream revision
     # returns (remote, changes)
-    result = subprocess.run(['git',
-                             'rev-parse',
-                             upstream],
+    result = subprocess.run(['git', 'rev-parse', upstream],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -134,11 +126,7 @@ def get_remote(path: str, upstream='@{u}'):
 
 def update_index(path: str):
     # update the index
-    result = subprocess.run(['git',
-                             'update-index',
-                             '-q',
-                             '--ignore-submodules',
-                             '--refresh'],
+    result = subprocess.run(['git', 'update-index', '-q', '--ignore-submodules', '--refresh'],
                             cwd=path)
     if result.returncode != 0:
         print_error('error updating index; aborting', path, result.stdout, result.stderr)
@@ -146,10 +134,7 @@ def update_index(path: str):
 
 
 def get_base(path: str, upstream='@{u}'):
-    result = subprocess.run(['git',
-                             'merge-base',
-                             '@',
-                             upstream],
+    result = subprocess.run(['git', 'merge-base', '@', upstream],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -161,32 +146,21 @@ def get_base(path: str, upstream='@{u}'):
 
 def check_unstaged_changes(path: str) -> bool:
     # return True if unstaged changes in the working tree
-    result = subprocess.run(['git',
-                             'diff-files',
-                             '--quiet',
-                             '--ignore-submodules'],
+    result = subprocess.run(['git', 'diff-files', '--quiet', '--ignore-submodules'],
                             cwd=path)
     return result.returncode != 0
 
 
 def check_uncommitted_changes(path: str) -> bool:
     # return True if there are uncommitted changes in the index
-    result = subprocess.run(['git',
-                             'diff-index',
-                             '--cached',
-                             '--quiet',
-                             'HEAD',
-                             '--ignore-submodules'],
+    result = subprocess.run(['git', 'diff-index', '--cached', '--quiet', 'HEAD', '--ignore-submodules'],
                             cwd=path)
     return result.returncode != 0
 
 
 def check_untracked_files(path: str) -> bool:
     # return True if there are untracked files
-    result = subprocess.run(['git',
-                             'ls-files',
-                             '-o',
-                             '--exclude-standard'],
+    result = subprocess.run(['git', 'ls-files', '-o', '--exclude-standard'],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -196,10 +170,7 @@ def check_untracked_files(path: str) -> bool:
 def check_unpushed_commits(path: str) -> bool:
     # return True if thre are unpushed commits
     # note, no escaping curly braces here
-    result = subprocess.run(['git',
-                             'diff',
-                             '--quiet',
-                             '@{u}..'],
+    result = subprocess.run(['git', 'diff', '--quiet', '@{u}..'],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
@@ -208,10 +179,7 @@ def check_unpushed_commits(path: str) -> bool:
 
 def get_repo_url(path: str) -> str:
     # get repo URL; return None on error
-    result = subprocess.run(['git',
-                             'config',
-                             '--get',
-                             'remote.origin.url'],
+    result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'],
                             stdout=subprocess.PIPE,
                             cwd=path)
     if result.returncode != 0:
@@ -563,9 +531,10 @@ def main():
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in output)
         for item in sorted(output, key=itemgetter('path')):
+            changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'],
                                                     width=width,
-                                                    changes=', '.join(OUTPUT_MESSAGES[i] for i in item['changes'])))
+                                                    changes=changes))
 
 # -------------------------------------------------
 
