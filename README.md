@@ -48,7 +48,7 @@ Now do something like edit/add files, or commit (but don't push) changes, and ru
 
     find ~/ -type d -name .git -exec gitstat track {} \;
 
-(`gitstat` is "smart" enough to know that the parent directory of a directory ending in `.git` is the actual repository.)
+(`gitstat` is "smart" enough to know that the parent directory of a directory named `.git` is the actual repository.)
 
 
 ## Usage
