@@ -83,7 +83,7 @@ def fetch(path: str):
 
 
 def pull(path: str):
-    print('pulling', path)
+    print(f'pulling {path}')
     result = subprocess.run(['git', 'pull', '--quiet'],
                             cwd=path,
                             stdout=subprocess.PIPE,
@@ -522,7 +522,7 @@ def main():
             sys.exit()
         print('The following repos will be pulled:')
         for path in paths_to_pull:
-            print('  {}'.format(path))
+            print(f'  {path}')
         pull_from_origin(paths_to_pull)
         sys.exit()
 
