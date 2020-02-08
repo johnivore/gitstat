@@ -371,7 +371,7 @@ def main():
                              '  showclone         show "git clone" commands needed to clone missing repos (or all repos, with "--all")\n'
                              '                    "showclone" doesn\'t take any paths as arguments\n'
                              '  fetch             fetch from origin\n'
-                             '  pull              fetch, then pull if there are no local changes\n'
+                             '  pull              pull (if pull required and there are no local changes)\n'
                         )
     parser.add_argument('path',
                         nargs=argparse.REMAINDER,
@@ -474,15 +474,13 @@ def main():
         else:
             new_path_list.append(path)
 
-    if args.command in ['fetch', 'pull']:
+    if args.command == 'fetch':
         if len(new_path_list) == 0:
             # TODO: print more meaningful message
             print('Nothing to do.')
             sys.exit()
         fetch_from_origin(new_path_list, args.quiet)
-        if args.command == 'fetch':
-            # if fetching, stop here
-            sys.exit()
+        sys.exit()
 
     # normal functionality
     output = []
