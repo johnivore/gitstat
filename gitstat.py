@@ -28,6 +28,7 @@ import argparse
 import configparser
 from operator import itemgetter
 from textwrap import dedent
+import click
 
 OUTPUT_MESSAGES = {
     'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
@@ -513,6 +514,11 @@ def main():
         for item in sorted(output, key=itemgetter('path')):
             changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
+
+
+@click.command()
+def hello():
+    print('Hello, world!')
 
 
 # -------------------------------------------------

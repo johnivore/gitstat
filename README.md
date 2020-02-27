@@ -19,7 +19,8 @@
 
 ## Requirements
 
-* Python 3.5+
+* Python 3.5+ (currently tested with 3.8)
+* click
 * git
 
 
