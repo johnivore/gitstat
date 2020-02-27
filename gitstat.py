@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 gitstat.py
 
@@ -30,21 +29,21 @@ import configparser
 from operator import itemgetter
 from textwrap import dedent
 
-
-OUTPUT_MESSAGES = {'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
-                   'uncommitted': '\033[0;33m{}\033[0m'.format('uncommitted changes'),
-                   'untracked': '\033[0;31m{}\033[0m'.format('untracked files'),
-                   'unpushed': '\033[0;36m{}\033[0m'.format('unpushed commits'),
-                   'pull-required': '\033[0;32m{}\033[0m'.format('pull required'),
-                   'up-to-date': '\033[0;32m{}\033[0m'.format('up to date'),
-                   'url-mismatch': '\033[0;31m{}\033[0m'.format('URL mismatch'),
-                   'diverged': '\033[0;31m{}\033[0m'.format('DIVERGED'),
-                   'error-fetching': '\033[0;31m{}\033[0m'.format('error fetching'),
-                   'error-pulling': '\033[0;31m{}\033[0m'.format('error pulling'),
-                   }
-
+OUTPUT_MESSAGES = {
+    'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
+    'uncommitted': '\033[0;33m{}\033[0m'.format('uncommitted changes'),
+    'untracked': '\033[0;31m{}\033[0m'.format('untracked files'),
+    'unpushed': '\033[0;36m{}\033[0m'.format('unpushed commits'),
+    'pull-required': '\033[0;32m{}\033[0m'.format('pull required'),
+    'up-to-date': '\033[0;32m{}\033[0m'.format('up to date'),
+    'url-mismatch': '\033[0;31m{}\033[0m'.format('URL mismatch'),
+    'diverged': '\033[0;31m{}\033[0m'.format('DIVERGED'),
+    'error-fetching': '\033[0;31m{}\033[0m'.format('error fetching'),
+    'error-pulling': '\033[0;31m{}\033[0m'.format('error pulling'),
+}
 
 # -------------------------------------------------
+
 
 def print_error(message: str, repo_path=None, stdout=None, stderr=None):
     print('\033[0;31m{}{}\033[0m'.format(message, ': {}'.format(repo_path) if repo_path else ''))
@@ -73,10 +72,7 @@ def write_config_file():
 
 
 def fetch(path: str):
-    result = subprocess.run(['git', 'fetch', '--quiet'],
-                            cwd=path,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    result = subprocess.run(['git', 'fetch', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git fetch" output follows:', result.stdout, result.stderr)
         return 'error-fetching'
@@ -84,20 +80,14 @@ def fetch(path: str):
 
 def pull(path: str):
     print(f'pulling {path}')
-    result = subprocess.run(['git', 'pull', '--quiet'],
-                            cwd=path,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    result = subprocess.run(['git', 'pull', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git pull" output follows:', result.stdout, result.stderr)
         return 'error-pulling'
 
 
 def get_local(path: str):
-    result = subprocess.run(['git', 'rev-parse', '@'],
-                            cwd=path,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    result = subprocess.run(['git', 'rev-parse', '@'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error('error doing "rev-parse @"; aborting', path, result.stdout, result.stderr)
         return 1
@@ -107,10 +97,7 @@ def get_local(path: str):
 def get_remote(path: str, upstream='@{u}'):
     # find upstream revision
     # returns (remote, changes)
-    result = subprocess.run(['git', 'rev-parse', upstream],
-                            cwd=path,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    result = subprocess.run(['git', 'rev-parse', upstream], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode == 0:
         changes = None
     else:
@@ -126,8 +113,7 @@ def get_remote(path: str, upstream='@{u}'):
 
 def update_index(path: str):
     # update the index
-    result = subprocess.run(['git', 'update-index', '-q', '--ignore-submodules', '--refresh'],
-                            cwd=path)
+    result = subprocess.run(['git', 'update-index', '-q', '--ignore-submodules', '--refresh'], cwd=path)
     if result.returncode != 0:
         print_error('error updating index; aborting', path, result.stdout, result.stderr)
         return 1
@@ -146,15 +132,13 @@ def get_base(path: str, upstream='@{u}'):
 
 def check_unstaged_changes(path: str) -> bool:
     # return True if unstaged changes in the working tree
-    result = subprocess.run(['git', 'diff-files', '--quiet', '--ignore-submodules'],
-                            cwd=path)
+    result = subprocess.run(['git', 'diff-files', '--quiet', '--ignore-submodules'], cwd=path)
     return result.returncode != 0
 
 
 def check_uncommitted_changes(path: str) -> bool:
     # return True if there are uncommitted changes in the index
-    result = subprocess.run(['git', 'diff-index', '--cached', '--quiet', 'HEAD', '--ignore-submodules'],
-                            cwd=path)
+    result = subprocess.run(['git', 'diff-index', '--cached', '--quiet', 'HEAD', '--ignore-submodules'], cwd=path)
     return result.returncode != 0
 
 
@@ -179,9 +163,7 @@ def check_unpushed_commits(path: str) -> bool:
 
 def get_repo_url(path: str) -> str:
     # get repo URL; return None on error
-    result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'],
-                            stdout=subprocess.PIPE,
-                            cwd=path)
+    result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], stdout=subprocess.PIPE, cwd=path)
     if result.returncode != 0:
         return None
     return result.stdout.decode().strip()
@@ -357,31 +339,30 @@ def main():
 
     parser = argparse.ArgumentParser(description='Show status of tracked git repos',
                                      formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('command',
-                        nargs='?',
-                        default='check',
-                        choices=('check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch', 'pull'),
-                        help='An optional <command> can be specified:\n'
-                             '  check [path...]   default functionality; check git repos in one or more directories\n'
-                             '  track path...     track one more more repos in one or more directories\n'
-                             '  untrack path...   untrack one more more repos in one or more directories\n'
-                             '  ignore path...    don\'t include one or more directories in future output (but it is still included with "--all")\n'
-                             '  update [path...]  update the origin URL in the gitstat config from the origin in git config\n'
-                             '                    specify one or more paths, or with no paths specified, update all repos\n'
-                             '  showclone         show "git clone" commands needed to clone missing repos (or all repos, with "--all")\n'
-                             '                    "showclone" doesn\'t take any paths as arguments\n'
-                             '  fetch             fetch from origin\n'
-                             '  pull              pull (if pull required and there are no local changes)\n'
-                        )
-    parser.add_argument('path',
-                        nargs=argparse.REMAINDER,
-                        default=[],
-                        help='path1 path2 pathN...')
-    parser.add_argument('--all', '-a',
+    parser.add_argument(
+        'command',
+        nargs='?',
+        default='check',
+        choices=('check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch', 'pull'),
+        help='An optional <command> can be specified:\n'
+        '  check [path...]   default functionality; check git repos in one or more directories\n'
+        '  track path...     track one more more repos in one or more directories\n'
+        '  untrack path...   untrack one more more repos in one or more directories\n'
+        '  ignore path...    don\'t include one or more directories in future output (but it is still included with "--all")\n'
+        '  update [path...]  update the origin URL in the gitstat config from the origin in git config\n'
+        '                    specify one or more paths, or with no paths specified, update all repos\n'
+        '  showclone         show "git clone" commands needed to clone missing repos (or all repos, with "--all")\n'
+        '                    "showclone" doesn\'t take any paths as arguments\n'
+        '  fetch             fetch from origin\n'
+        '  pull              pull (if pull required and there are no local changes)\n')
+    parser.add_argument('path', nargs=argparse.REMAINDER, default=[], help='path1 path2 pathN...')
+    parser.add_argument('--all',
+                        '-a',
                         action='store_true',
                         default=False,
                         help='show all tracked repos regardless if they have changes')
-    parser.add_argument('--quiet', '-q',
+    parser.add_argument('--quiet',
+                        '-q',
                         action='store_true',
                         default=False,
                         help='be quiet; return 1 if any repo has changes, else return 0')
@@ -428,7 +409,8 @@ def main():
     # for all functions after this point, we need to know what repos we're tracking
     tracked_paths = [x for x in config.sections() if x != 'DEFAULT']
     if not tracked_paths:
-        print(dedent("""
+        print(
+            dedent("""
             No git repos are being tracked. To track a repo:
 
                 gitstat track </path/to/my/project>
@@ -530,12 +512,10 @@ def main():
         width = max(len(x['path']) for x in output)
         for item in sorted(output, key=itemgetter('path')):
             changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
-            print('{path:{width}} {changes}'.format(path=item['path'],
-                                                    width=width,
-                                                    changes=changes))
+            print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
+
 
 # -------------------------------------------------
-
 
 if __name__ == '__main__':
     freeze_support()
