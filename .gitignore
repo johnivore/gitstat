@@ -1,3 +1,5 @@
-.idea/
-.vscode/
-.mypy_cache/
+.idea
+.vscode
+.mypy_cache
+
+.tox
