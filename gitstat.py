@@ -30,6 +30,7 @@ from operator import itemgetter
 from textwrap import dedent
 import click
 from click_default_group import DefaultGroup
+from tqdm import tqdm
 
 OUTPUT_MESSAGES = {
     'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
@@ -52,22 +53,10 @@ config = configparser.ConfigParser()
 def print_error(message: str, repo_path=None, stdout=None, stderr=None):
     print('\033[0;31m{}{}\033[0m'.format(message, ': {}'.format(repo_path) if repo_path else ''))
     if stdout or stderr:
-        print('output from git follows:')
         if stdout:
             print(stdout.decode().strip())
         if stderr:
             print('\033[0;31m{}\033[0m'.format(stderr.decode().strip()))
-
-
-def progressbar(iteration: int, total: int, prefix='', suffix='', decimals=0, length=100, blank='-', fill='#'):
-    percent = ('{0:.' + str(decimals) + 'f}').format(100 * (iteration / total))
-    filled_length = int(length * iteration / total)
-    prog_bar = fill * filled_length + blank * (length - filled_length)
-    print(f'{prefix} [{prog_bar}] {percent}% {suffix}', end='\r')
-
-
-def progress(prefix: str, iteration: int, total: int):
-    progressbar(iteration, total, prefix=prefix, suffix='', length=50)
 
 
 def config_filename():
@@ -284,21 +273,23 @@ def get_paths(paths: List[str], all=False) -> List[str]:
     return new_path_list
 
 
-def check_paths(paths: List[str]) -> List[Dict]:
+def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
     '''
     return a tuple of tuple representing the output
     '''
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
-            if result == None:
-                continue
-            assert isinstance(result, Dict)
-            output.append(result)
+        with tqdm(total=len(paths), disable = not progress_bar, leave=False) as pbar:
+            for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+                pbar.update()
+                if result == None:
+                    continue
+                assert isinstance(result, Dict)
+                output.append(result)
     return output
 
 
-def check_paths_with_exit_code(paths: List[str]) -> int:
+def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
     '''
     return an int representing the return code with which we should exit:
         0 for no changes
@@ -306,19 +297,19 @@ def check_paths_with_exit_code(paths: List[str]) -> int:
     '''
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
-            if result:
-                exit_code = 1
-                pool.terminate()
-                break
+        with tqdm(total=len(paths), disable = not progress_bar, leave=False) as pbar:
+            for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+                if result:
+                    exit_code = 1
+                    pool.terminate()
+                    pbar.close()
+                    break
     return exit_code
 
 
 @click.group(cls=DefaultGroup, default='check', default_if_no_args=True)
-# @click.option('--debug/--no-debug', default=False)
 def cli():
-    # click.echo('Debug mode is %s' % ('on' if debug else 'off'))
-    pass
+    freeze_support()
 
 
 @cli.command()
@@ -327,15 +318,16 @@ def cli():
         help='show all tracked repos regardless if they have changes')
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True,
         help='be quiet; return 1 if any repo has changes, else return 0')
-def check(path: Tuple[str], all: bool, quiet: bool):
+@click.option('-p', '--progress', type=bool, default=False, is_flag=True,
+        help='show progress bar')
+def check(path: Tuple[str], all: bool, quiet: bool, progress: bool):
     '''default functionality; check git repos in one or more directories'''
-    freeze_support()
     read_config()
     if quiet:
-        int_result = check_paths_with_exit_code(get_paths(list(path), all))
+        int_result = check_paths_with_exit_code(get_paths(list(path), all), progress_bar=progress)
         sys.exit(int_result)
     # everything went as expected!
-    result: List[Dict] = check_paths(get_paths(list(path), all))
+    result: List[Dict] = check_paths(get_paths(list(path), all), progress_bar=progress)
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
@@ -350,7 +342,6 @@ def check(path: Tuple[str], all: bool, quiet: bool):
 def track(path: tuple):
     '''track one more more repos in one or more directories'''
     global config
-    freeze_support()
     read_config()
     changed = False
     for track_path in path:
@@ -377,7 +368,6 @@ def track(path: tuple):
 def untrack(path: tuple):
     '''untrack one more more repos in one or more directories'''
     global config
-    freeze_support()
     read_config()
     changed = False
     for untrack_path in path:
@@ -395,7 +385,6 @@ def untrack(path: tuple):
 def ignore(path: tuple):
     '''ignore one more more repos in one or more directories'''
     global config
-    freeze_support()
     read_config()
     changed = False
     for ignore_path in path:
@@ -417,7 +406,6 @@ def ignore(path: tuple):
 def showclone(all: bool):
     '''show "git clone" commands needed to clone missing repos'''
     global config
-    freeze_support()
     read_config()
     paths = get_paths([], all=True)
     for path in paths:
@@ -428,56 +416,32 @@ def showclone(all: bool):
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
-@click.option('-q', '--quiet', type=bool, default=False, is_flag=True, help='be quiet')
-def fetch(path: tuple, quiet: bool):
+@click.option('-p', '--progress', type=bool, default=False, is_flag=True,
+        help='show progress bar')
+def fetch(path: tuple, progress: bool):
     '''fetch from origin'''
-    freeze_support()
     read_config()
     paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
     if len(paths_to_fetch) == 0:
-        # TODO: print more meaningful message
-        print('Nothing to do.')
         return  # might want to chain commands...
-    # fetch from upstream
-    if not quiet:
-        num_processed = 0
-        length = len(paths_to_fetch)
-        progress('Fetching:', num_processed, length)
     with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
-            if not quiet:
-                num_processed += 1
-                progress('Fetching:', num_processed, length)
-            # NOTE: here we could add 'error-fetching' to the output if we wanted to show 'check' output later
-            # if isinstance(result, int) and result == 1:
-            #     # there was an error; terminate threads and exit
-            #     pool.terminate()
-            #     break
-            # if isinstance(result, bool) and result:
-            #     if quiet:
-            #         pool.terminate()
-            #         break
-            #     print_error('should not have reached this point')
-            #     pool.terminate()
-            #     break
-    # clear progress bar
-    if not quiet:
-        print('\r\x1b[2K', end='\r')
+        with tqdm(total=len(paths_to_fetch), disable = not progress, leave=False) as pbar:
+            for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
+                pbar.update()
 
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
-def pull(path: tuple, quiet: bool):
+@click.option('-p', '--progress', type=bool, default=False, is_flag=True,
+        help='show progress bar')
+def pull(path: tuple, progress: bool):
     '''
     Pull from origin (if pull required and there are no local changes).
     Hint: run "gitstat fetch" first.
     '''
-    freeze_support()
     read_config()
     paths_to_check: List[str] = get_paths(list(path), all)
     if len(paths_to_check) == 0:
-        # TODO: print more meaningful message
-        print('Nothing to do.')
         return  # might want to chain commands...
     output = check_paths(paths_to_check)
     paths_to_pull: List[str] = []
@@ -488,9 +452,7 @@ def pull(path: tuple, quiet: bool):
     if len(paths_to_pull) == 0:
         sys.exit()
     with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
-            # if isinstance(result, int) and result == 1:
-            #     # there was an error; terminate threads and exit
-            #     pool.terminate()
-            #     break
-            pass
+        with tqdm(total=len(paths_to_pull), disable = not progress, leave=False) as pbar:
+            for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
+                pbar.write(result['path'])
+                pbar.update()

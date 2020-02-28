@@ -6,7 +6,7 @@ VERSION = '0.1'
 setup(
     name='gitstat',
     version=VERSION,
-    description='A simple tool to check if your git repos have local changes and succinctly output a summary.',
+    description='A simple tool to check your git repos for various changes and output a succinct summary.',
     author='John Begenisich',
     author_email='john.begenisich@outlook.com',
     url='https://gitlab.com/johnivore/gitstat',
@@ -21,6 +21,7 @@ setup(
     install_requires=[
         'Click',
         'click-default-group',
+        'tqdm',
     ],
     entry_points='''
         [console_scripts]

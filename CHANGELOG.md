@@ -10,7 +10,9 @@
 ### Changed
 
 * Use 'Click' to manage command-line options
-* Remove 'update' functionality
+* Remove 'update' functionality (for now?)
+* Progress bar uses tqdm
+* For a few commands, replaced '--quiet' with '--progress'
 
 
 ## Initial version
