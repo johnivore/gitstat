@@ -12,7 +12,7 @@
 
 * Use 'Click' to manage command-line options
 * Remove 'update' command (for now?)
-* Progress bar uses tqdm
+* Progress bar now uses tqdm
 * For a few commands, replaced '--quiet' with '--progress'
 
 

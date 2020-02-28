@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''
+"""
 gitstat.py
 
 Copyright 2019-2020  John Begenisich
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 
 import os
 import sys
@@ -179,11 +179,11 @@ def get_repo_url(path: str) -> Optional[str]:
 
 
 def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
-    '''
+    """
     run various checks on a repo
     if even_if_uptodate == False and there are no changes, return None
     else return a dict of ['path': path, 'changes': List['str']]
-    '''
+    """
     changes: List[str] = []
     pull_required = False
     no_upstream_branch = False
@@ -242,12 +242,12 @@ def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
 
 
 def checkrepo_bool(path: str) -> bool:
-    '''
+    """
     Returns a bool if there are changes to the repo.
     This is just a wrapper for checkrepo(); it would be faster
     if we do the checks "manually" because we can bail as soon as
     one check indicated there are changes.
-    '''
+    """
     result = checkrepo(path)
     return False if result == None else True
 
@@ -274,9 +274,9 @@ def get_paths(paths: List[str], all=False) -> List[str]:
 
 
 def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
-    '''
+    """
     return a tuple of tuple representing the output
-    '''
+    """
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -290,11 +290,11 @@ def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
 
 
 def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
-    '''
+    """
     return an int representing the return code with which we should exit:
         0 for no changes
         1 for changes
-    '''
+    """
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -309,6 +309,14 @@ def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
 
 @click.group(cls=DefaultGroup, default='check', default_if_no_args=True)
 def cli():
+    """
+    Succinctly display information about one or more git repositories.
+    gitstat looks for unstaged changes; uncommitted changes; untracked,
+    unignored files; unpushed commits; and whether a pull from upstream
+    is required.  If no paths are specified on the command line, gitstat
+    will show information about repos it is tracking.  (Use "track"
+    to track repo(s).)  gitstat can fetch and pull from origin as well.
+    """
     freeze_support()
 
 
@@ -321,8 +329,16 @@ def cli():
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='show progress bar')
 def check(path: Tuple[str], all: bool, quiet: bool, progress: bool):
-    '''default functionality; check git repos in one or more directories'''
+    """
+    Check repo(s).
+    """
     read_config()
+    if not path and len(config.sections()) == 0:
+        print(dedent("""
+            No repos specified and no repos are being tracked.  You can
+            track a repo with "gitstat track /path/to/repo".
+            """))
+        sys.exit(0)
     if quiet:
         int_result = check_paths_with_exit_code(get_paths(list(path), all), progress_bar=progress)
         sys.exit(int_result)
@@ -340,7 +356,9 @@ def check(path: Tuple[str], all: bool, quiet: bool, progress: bool):
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
         required=True)
 def track(path: tuple):
-    '''track one more more repos in one or more directories'''
+    """
+    Track repo(s).
+    """
     global config
     read_config()
     changed = False
@@ -368,7 +386,9 @@ def track(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 def untrack(path: tuple):
-    '''untrack one more more repos in one or more directories'''
+    """
+    Untrack repo(s).
+    """
     global config
     read_config()
     changed = False
@@ -385,7 +405,9 @@ def untrack(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 def ignore(path: tuple):
-    '''ignore one more more repos in one or more directories'''
+    """
+    Ignore repo(s).
+    """
     global config
     read_config()
     changed = False
@@ -406,7 +428,9 @@ def ignore(path: tuple):
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
         help='show "git clone" commands even if the repo already exists on disk')
 def showclone(all: bool):
-    '''show "git clone" commands needed to clone missing repos'''
+    """
+    Show "git clone" commands needed to clone missing repos.
+    """
     global config
     read_config()
     paths = get_paths([], all=True)
@@ -421,7 +445,9 @@ def showclone(all: bool):
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='show progress bar')
 def fetch(path: tuple, progress: bool):
-    '''fetch from origin'''
+    """
+    Fetch from origin.
+    """
     read_config()
     paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
     if len(paths_to_fetch) == 0:
@@ -437,10 +463,10 @@ def fetch(path: tuple, progress: bool):
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='show progress bar')
 def pull(path: tuple, progress: bool):
-    '''
-    Pull from origin (if pull required and there are no local changes).
+    """
+    Pull from origin (no local changes).
     Hint: run "gitstat fetch" first.
-    '''
+    """
     read_config()
     paths_to_check: List[str] = get_paths(list(path), all)
     if len(paths_to_check) == 0:
@@ -465,9 +491,9 @@ def pull(path: tuple, progress: bool):
 @click.option('-q', '--quiet-if-tracked', type=bool, default=False, is_flag=True,
         help='Don\'t output anything if the repo is being tracked.')
 def is_tracked(path: tuple, quiet_if_tracked: bool):
-    '''
+    """
     Show whether one or more repos are tracked by gitstat.
-    '''
+    """
     global config
     read_config()
     for path_to_check in path:
