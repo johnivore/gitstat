@@ -14,7 +14,9 @@
 * unpushed commits
 * if a pull from upstream is required
 
-`gitstat` can optionally fetch or pull changes from upstream, and has a few other features to improve quality of life when dealing with many git repositories.  It uses multiple processes to speed things up, and will try to continue even if there is a problem with a repository.
+`gitstat` can also fetch or pull changes from upstream, and has a few other features to improve quality of life
+when dealing with many git repositories.  It uses multiple processes to speed things up, and will try to continue
+even if there is a problem with a repository.
 
 
 ## Requirements
@@ -33,9 +35,21 @@ It's just one Python script, so you could do something like:
 
 ## Getting started
 
+### Show information about a repository
+
+    gitstat ~/myproject
+
+Note: this is the same as:
+
+    gitstat check ~/myproject
+
+("check" is the default gitstat command.)
+
 ### Track a repo
 
-    gitstat track ~/workspace/myproject
+You use `~/myproject` all the time; tell gitsat to remember it:
+
+    gitstat track ~/myproject
 
 (Relative paths are converted to absolute paths in `gitstat`'s config file.)
 
@@ -43,18 +57,11 @@ Now do something like edit/add files, or commit (but don't push) changes, and ru
 
 ### Track a bunch of repos
 
-    gitstat track ~/workspace/project1 ~/workspace/project2 ...
-
-### Track every repo in your home directory
-
-    find ~/ -type d -name .git -exec gitstat track {} \;
-
-(`gitstat` is "smart" enough to know that the parent directory of a directory named `.git` is the actual repository.)
-
+    gitstat track ~/workspace/project1 ~/work/project2 ...
 
 ## Usage
 
-Show repos with local/unpushed changes:
+Show summary of all tracked repos:
 
     gitstat
 
@@ -89,6 +96,12 @@ There are more options.  Show help:
 
 * `gitstat showclone` will output a list of `git clone` commands for any repos `gitstat` is tracking, but do not exist on the filesystem.
 * `gitstat showclone --all` will do it for all tracked git repos whether they exist or not.
+
+### Track every repo in your home directory
+
+    find ~/ -type d -name .git -exec gitstat track {} \;
+
+(`gitstat` is "smart" enough to know that the parent directory of a directory named `.git` is the actual repository.)
 
 ### Are you tracking all the repos you want to track?
 

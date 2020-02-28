@@ -316,6 +316,7 @@ def cli():
     is required.  If no paths are specified on the command line, gitstat
     will show information about repos it is tracking.  (Use "track"
     to track repo(s).)  gitstat can fetch and pull from origin as well.
+    Run "gitstat COMMAND --help" for help about a specific command.
     """
     freeze_support()
 

@@ -14,6 +14,7 @@
 * Remove 'update' command (for now?)
 * Progress bar now uses tqdm
 * For a few commands, replaced '--quiet' with '--progress'
+* Improve help text
 
 
 ## Initial version
