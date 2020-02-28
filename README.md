@@ -92,20 +92,7 @@ There are more options.  Show help:
 
 ### Are you tracking all the repos you want to track?
 
-Passing a path to `gitstat` that it is not tracking will output "`not tracked by gitstat`", so:
-
-    find ~/ -type d -name .git | xargs gitstat check
-
-
-## Handling upstream URL changes
-
-The normal `gitstat` output will check if the upstream origin URL matches the URL in the `gitstat` config file and print an alert if they don't match.  `gitstat` can automatically update the origin URL in its config with `gitstat update`:
-
-    gitstat update /path/to/myproject
-
-or to update the origin URL for all tracked repos:
-
-    gitstat update
+    find ~/ -type d -name .git | xargs gitstat is-tracked --quiet-if-tracked
 
 
 ## Config file

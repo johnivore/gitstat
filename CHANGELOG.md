@@ -6,15 +6,16 @@
 
 * Support checking repos that are not tracked by gitstat
 * Add a fair amount of type hinting
+* Add 'is-tracked' command
 
 ### Changed
 
 * Use 'Click' to manage command-line options
-* Remove 'update' functionality (for now?)
+* Remove 'update' command (for now?)
 * Progress bar uses tqdm
 * For a few commands, replaced '--quiet' with '--progress'
 
 
 ## Initial version
 
-* 'check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch' and 'pull' functionality
+* 'check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch' and 'pull' commands

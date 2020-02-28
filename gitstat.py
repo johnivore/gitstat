@@ -279,7 +279,7 @@ def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
     '''
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
-        with tqdm(total=len(paths), disable = not progress_bar, leave=False) as pbar:
+        with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
             for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
                 pbar.update()
                 if result == None:
@@ -297,7 +297,7 @@ def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
     '''
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
-        with tqdm(total=len(paths), disable = not progress_bar, leave=False) as pbar:
+        with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
             for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
                 if result:
                     exit_code = 1
@@ -427,7 +427,7 @@ def fetch(path: tuple, progress: bool):
     if len(paths_to_fetch) == 0:
         return  # might want to chain commands...
     with Pool(processes=cpu_count()) as pool:
-        with tqdm(total=len(paths_to_fetch), disable = not progress, leave=False) as pbar:
+        with tqdm(total=len(paths_to_fetch), disable=not progress, leave=False) as pbar:
             for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
                 pbar.update()
 
@@ -454,7 +454,27 @@ def pull(path: tuple, progress: bool):
     if len(paths_to_pull) == 0:
         sys.exit()
     with Pool(processes=cpu_count()) as pool:
-        with tqdm(total=len(paths_to_pull), disable = not progress, leave=False) as pbar:
+        with tqdm(total=len(paths_to_pull), disable=not progress, leave=False) as pbar:
             for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
                 pbar.write(result['path'])
                 pbar.update()
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+@click.option('-q', '--quiet-if-tracked', type=bool, default=False, is_flag=True,
+        help='Don\'t output anything if the repo is being tracked.')
+def is_tracked(path: tuple, quiet_if_tracked: bool):
+    '''
+    Show whether one or more repos are tracked by gitstat.
+    '''
+    global config
+    read_config()
+    for path_to_check in path:
+        if path_to_check.endswith('/.git'):
+            path_to_check = path_to_check[:-5]
+        if path_to_check not in config.sections():
+            print_error('not being tracked', path_to_check)
+            continue
+        if not quiet_if_tracked:
+            print_error('is being tracked', path_to_check)
