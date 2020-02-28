@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 VERSION = '0.1'
 
@@ -16,11 +16,14 @@ setup(
         'Programming Language :: Python',
     ],
     py_modules=['gitstat'],
+    packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         'Click',
+        'click-default-group',
     ],
     entry_points='''
         [console_scripts]
-        gitstat=gitstat:hello
+        gitstat=gitstat:cli
     ''',
 )

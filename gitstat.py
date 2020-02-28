@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import sys
-from typing import List
+from typing import List, Tuple, Dict, Optional, Union
 import subprocess
 from multiprocessing import Pool, freeze_support, cpu_count
 from pathlib import Path
@@ -29,6 +29,7 @@ import configparser
 from operator import itemgetter
 from textwrap import dedent
 import click
+from click_default_group import DefaultGroup
 
 OUTPUT_MESSAGES = {
     'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
@@ -42,6 +43,8 @@ OUTPUT_MESSAGES = {
     'error-fetching': '\033[0;31m{}\033[0m'.format('error fetching'),
     'error-pulling': '\033[0;31m{}\033[0m'.format('error pulling'),
 }
+
+config = configparser.ConfigParser()
 
 # -------------------------------------------------
 
@@ -67,19 +70,35 @@ def progress(prefix: str, iteration: int, total: int):
     progressbar(iteration, total, prefix=prefix, suffix='', length=50)
 
 
-def write_config_file():
-    with open(config_filename, 'w') as file_writer:
+def config_filename():
+    if 'XDG_CONFIG_HOME' in os.environ:
+        config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
+    else:
+        config_filename = Path(Path.home(), '.config', 'gitstat.conf')
+    return config_filename
+
+
+def read_config():
+    global config
+    filename = config_filename()
+    if filename.is_file():
+        config.read(filename)
+
+
+def write_config():
+    global config
+    with open(config_filename(), 'w') as file_writer:
         config.write(file_writer)
 
 
-def fetch(path: str):
+def fetch_from_origin(path: str):
     result = subprocess.run(['git', 'fetch', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git fetch" output follows:', result.stdout, result.stderr)
         return 'error-fetching'
 
 
-def pull(path: str):
+def pull_from_origin(path: str):
     print(f'pulling {path}')
     result = subprocess.run(['git', 'pull', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
@@ -162,7 +181,7 @@ def check_unpushed_commits(path: str) -> bool:
     return result.returncode != 0
 
 
-def get_repo_url(path: str) -> str:
+def get_repo_url(path: str) -> Optional[str]:
     # get repo URL; return None on error
     result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], stdout=subprocess.PIPE, cwd=path)
     if result.returncode != 0:
@@ -170,11 +189,12 @@ def get_repo_url(path: str) -> str:
     return result.stdout.decode().strip()
 
 
-def checkrepo(path: str) -> List[str]:
-    # run various checks on a repo
-    # these were previously passed as arguments
-    even_if_uptodate = args.all
-    return_bool = args.quiet
+def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
+    '''
+    run various checks on a repo
+    if even_if_uptodate == False and there are no changes, return None
+    else return a dict of ['path': path, 'changes': List['str']]
+    '''
     changes: List[str] = []
     pull_required = False
     no_upstream_branch = False
@@ -184,11 +204,15 @@ def checkrepo(path: str) -> List[str]:
         print_error('error getting git URL', path)
         changes.append(OUTPUT_MESSAGES['untracked'].format('origin URL error'))
     else:
-        if origin_url != config[path]['url']:
-            print_error(path, 'origin URL mismatch (maybe fix with "gitstat update")')
-            print('  gitstat: {}'.format(config[path]['url']))
-            print('  origin:  {}'.format(origin_url))
-            changes.append('url-mismatch')
+        if not config.has_section(path):
+            # TODO: sometimes want to warn the user?
+            pass
+        else:
+            if origin_url != config[path]['url']:
+                print_error(path, 'origin URL mismatch (maybe fix with "gitstat update")')
+                print('  gitstat: {}'.format(config[path]['url']))
+                print('  origin:  {}'.format(origin_url))
+                changes.append('url-mismatch')
     # get local, remote, and base revisions
     local = get_local(path)
     remote, result = get_remote(path)
@@ -220,57 +244,23 @@ def checkrepo(path: str) -> List[str]:
     if not pull_required:
         if check_unpushed_commits(path):
             changes.append('unpushed')
-    # --quiet
-    if return_bool:
-        return True if changes else False
-    # --all
     if not changes and even_if_uptodate:
         changes.append('up-to-date')
     # if something changed, return the changes; else nothing
     if changes:
-        return {'path': path, 'changes': changes}
+        return {'path': path, 'changes': changes}  # TODO: we already know the path; why return it again?
+    return None
 
 
-def track(path: str):
-    # track a repo
-    if path in config.sections():
-        print_error('already being tracked', path)
-        return
-    if not os.path.isdir(path):
-        print_error('not found', path)
-        return
-    if not os.path.isdir(os.path.join(path, '.git')):
-        print_error('not a git directory', path)
-        return
-    url = get_repo_url(path)
-    if not url:
-        print_error('error getting git URL', path)
-        return
-    # add it to config file
-    config.add_section(path)
-    config[path]['url'] = url
-    write_config_file()
-
-
-def untrack(path: str):
-    # untrack a repo
-    if path not in config.sections():
-        print_error('already not being tracked', path)
-        return
-    config.remove_section(path)
-    write_config_file()
-
-
-def ignore(path: str):
-    # ignore a repo
-    if path not in config.sections():
-        print_error('not being tracked', path)
-        return
-    if config[path]['ignore'] == 'true':
-        print_error('already ignored', path)
-        return
-    config[path]['ignore'] = 'true'
-    write_config_file()
+def checkrepo_bool(path: str) -> bool:
+    '''
+    Returns a bool if there are changes to the repo.
+    This is just a wrapper for checkrepo(); it would be faster
+    if we do the checks "manually" because we can bail as soon as
+    one check indicated there are changes.
+    '''
+    result = checkrepo(path)
+    return False if result == None else True
 
 
 def update_url(path: str):
@@ -283,172 +273,21 @@ def update_url(path: str):
         print('  old: {}'.format(config[path]['url']))
         print('  new: {}'.format(origin_url))
         config[path]['url'] = origin_url
-        write_config_file()
+        write_config()
 
 
-def fetch_from_origin(paths: List[str], quiet: bool):
-    # fetch from upstream
-    if not quiet:
-        num_processed = 0
-        length = len(paths)
-        progress('Fetching:', num_processed, length)
-    with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(fetch, paths, chunksize=1):
-            if not quiet:
-                num_processed += 1
-                progress('Fetching:', num_processed, length)
-            if isinstance(result, int) and result == 1:
-                # there was an error; terminate threads and exit
-                pool.terminate()
-                break
-            elif isinstance(result, bool) and result:
-                if args.quiet:
-                    pool.terminate()
-                    break
-                print_error('should not have reached this point')
-                pool.terminate()
-                break
-    # clear progress bar
-    if not quiet:
-        print('\r\x1b[2K', end='\r')
-
-
-def pull_from_origin(paths: List[str]):
-    # pull from upstream
-    with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(pull, paths, chunksize=1):
-            if isinstance(result, int) and result == 1:
-                # there was an error; terminate threads and exit
-                pool.terminate()
-                break
-            elif isinstance(result, bool) and result:
-                if args.quiet:
-                    pool.terminate()
-                    break
-                print_error('should not have reached this point')
-                pool.terminate()
-                break
-
-
-# -------------------------------------------------
-
-
-def main():
-    global args
-    global config
-    global config_filename
-
-    parser = argparse.ArgumentParser(description='Show status of tracked git repos',
-                                     formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument(
-        'command',
-        nargs='?',
-        default='check',
-        choices=('check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch', 'pull'),
-        help='An optional <command> can be specified:\n'
-        '  check [path...]   default functionality; check git repos in one or more directories\n'
-        '  track path...     track one more more repos in one or more directories\n'
-        '  untrack path...   untrack one more more repos in one or more directories\n'
-        '  ignore path...    don\'t include one or more directories in future output (but it is still included with "--all")\n'
-        '  update [path...]  update the origin URL in the gitstat config from the origin in git config\n'
-        '                    specify one or more paths, or with no paths specified, update all repos\n'
-        '  showclone         show "git clone" commands needed to clone missing repos (or all repos, with "--all")\n'
-        '                    "showclone" doesn\'t take any paths as arguments\n'
-        '  fetch             fetch from origin\n'
-        '  pull              pull (if pull required and there are no local changes)\n')
-    parser.add_argument('path', nargs=argparse.REMAINDER, default=[], help='path1 path2 pathN...')
-    parser.add_argument('--all',
-                        '-a',
-                        action='store_true',
-                        default=False,
-                        help='show all tracked repos regardless if they have changes')
-    parser.add_argument('--quiet',
-                        '-q',
-                        action='store_true',
-                        default=False,
-                        help='be quiet; return 1 if any repo has changes, else return 0')
-    args = parser.parse_args()
-
-    config = configparser.ConfigParser()
-    # get config file location
-    if 'XDG_CONFIG_HOME' in os.environ:
-        config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
-    else:
-        config_filename = Path(Path.home(), '.config', 'gitstat.conf')
-    if config_filename.is_file():
-        config.read(config_filename)
-
-    # add DEFAULT section to config if missing
-    if not config.has_section('DEFAULT'):
-        config['DEFAULT'] = {'ignore': 'false'}
-        write_config_file()
-
-    if args.command == 'showclone' and args.path:
-        print_error('"showclone" doesn\'t take any paths as arguments')
-        sys.exit(1)
-
-    paths = []
-    for p in args.path:
-        path = Path(p).absolute()
-        # if the user specified the .git path, they surely meant the parent directory
-        if path.name == '.git':
-            path = path.parent
-        paths.append(path)
-
-    if args.command in ['track', 'untrack', 'ignore']:
-        if args.command == 'track':
-            for p in paths:
-                track(str(p))
-        if args.command == 'untrack':
-            for p in paths:
-                untrack(str(p))
-        if args.command == 'ignore':
-            for p in paths:
-                ignore(str(p))
-        sys.exit()
-
-    # for all functions after this point, we need to know what repos we're tracking
-    tracked_paths = [x for x in config.sections() if x != 'DEFAULT']
-    if not tracked_paths:
-        print(
-            dedent("""
-            No git repos are being tracked. To track a repo:
-
-                gitstat track </path/to/my/project>
-
-            Then run gitstat with no arguments.
-            """.lstrip('\n')))
-        sys.exit()
-
-    # if one or more paths are passed as arguments, use those (instead of all tracked repos)
-    if args.path and args.command not in ['update', 'showclone']:
-        paths_to_check = []
-        for p in paths:
-            path = str(p)
-            if path in tracked_paths:
-                paths_to_check.append(path)
-            else:
-                print_error('not tracked by gitstat', path)
-    else:
-        # do all
-        paths_to_check = tracked_paths
-
-    if args.command == 'update':
-        for path in paths_to_check:
-            update_url(path)
-        sys.exit()
-
-    if args.command == 'showclone':
-        for path in paths_to_check:
-            if args.all or not os.path.isdir(os.path.join(path, '.git')):
-                print('git clone {} {}'.format(config[path]['url'], path))
-        sys.exit()
-
-    # to avoid spawning unneeded processes, do some checks now
-    # convert paths we want to check to strings for convenience (config, subprocess, etc.)
+def get_paths(paths: List[str], all=False) -> List[str]:
+    # return a list of strings representing zero or more paths to git repos
+    # if paths is not None, use those; otherwise, use paths being tracked in config
+    # if all == False, skip those flagged to ignore in config
+    # if paths:
+        # TODO: flag if untracked?
+    if not paths:
+        # no specific paths to check; check all non-ignored paths in the config
+        paths = [x for x in config.sections() if x != 'DEFAULT']
     new_path_list: List[str] = []
-    for path in paths_to_check:
-        if not args.all and config[path]['ignore'] == 'true':
+    for path in paths:
+        if config.has_section(path) and not all and config[path]['ignore'] == 'true':
             continue
         if not os.path.isdir(path):
             print_error('not found', path)
@@ -456,69 +295,211 @@ def main():
             print_error('not a git directory', path)
         else:
             new_path_list.append(path)
+    return new_path_list
 
-    if args.command == 'fetch':
-        if len(new_path_list) == 0:
-            # TODO: print more meaningful message
-            print('Nothing to do.')
-            sys.exit()
-        fetch_from_origin(new_path_list, args.quiet)
-        sys.exit()
 
-    # normal functionality
-    output = []
-    exit_code = None
+def check_paths(paths: List[str]) -> List[Dict]:
+    '''
+    return a tuple of tuple representing the output
+    '''
+    output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
-        for result in pool.imap_unordered(checkrepo, new_path_list, chunksize=1):
-            if isinstance(result, int) and result == 1:
-                # there was an error; terminate threads and exit
+        for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+            if result == None:
+                continue
+            output.append(result)
+    return output
+
+
+def check_paths_bool(paths: List[str]) -> int:
+    '''
+    return an int representing the return code with which we should exit:
+        0 for no changes
+        1 for changes
+    '''
+    exit_code: int = 0
+    with Pool(processes=cpu_count()) as pool:
+        for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+            if result:
                 exit_code = 1
                 pool.terminate()
                 break
-            elif isinstance(result, bool) and result:
-                if args.quiet:
-                    exit_code = 1
-                    pool.terminate()
-                    break
-                print_error('should not have reached this point')
-                exit_code = 1
-                pool.terminate()
-                break
-            # normal output
-            elif result:
-                # this repo has changes; add them to the output list
-                output.append(result)
+    return exit_code
 
-    # are we supposed to exit with a specific return code?
-    if isinstance(exit_code, int) and exit_code in [0, 1]:
-        sys.exit(exit_code)
 
-    if args.command == 'pull':
-        paths_to_pull: List[str] = []
-        for item in output:
-            # only pull from repos with origin changes and no local changes
-            if len(item['changes']) == 1 and item['changes'][0] == 'pull-required':
-                paths_to_pull.append(item['path'])
-        if len(paths_to_pull) == 0:
-            sys.exit()
-        print('The following repos will be pulled:')
-        for path in paths_to_pull:
-            print(f'  {path}')
-        pull_from_origin(paths_to_pull)
-        sys.exit()
+@click.group(cls=DefaultGroup, default='check', default_if_no_args=True)
+# @click.option('--debug/--no-debug', default=False)
+def cli():
+    # click.echo('Debug mode is %s' % ('on' if debug else 'off'))
+    pass
 
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.option('-a', '--all', type=bool, default=False, is_flag=True,
+        help='show all tracked repos regardless if they have changes')
+@click.option('-q', '--quiet', type=bool, default=False, is_flag=True,
+        help='be quiet; return 1 if any repo has changes, else return 0')
+def check(path: Tuple[str], all: bool, quiet: bool):
+    """default functionality; check git repos in one or more directories"""
+    read_config()
+    if quiet:
+        result = check_paths_bool(get_paths(list(path), all))
+        sys.exit(result)
     # everything went as expected!
-    if output:
+    result = check_paths(get_paths(list(path), all))
+    if result:
         # print the array of {'path': path, 'changes': [changes]}
-        width = max(len(x['path']) for x in output)
-        for item in sorted(output, key=itemgetter('path')):
+        width = max(len(x['path']) for x in result)
+        for item in sorted(result, key=itemgetter('path')):
             changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
 
 
-@click.command()
-def hello():
-    print('Hello, world!')
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+        required=True)
+def track(path: tuple):
+    """track one more more repos in one or more directories"""
+    global config
+    read_config()
+    changed = False
+    for track_path in path:
+        if track_path in config.sections():
+            print_error('already being tracked', track_path)
+            continue
+        if not os.path.isdir(os.path.join(track_path, '.git')):
+            print_error('not a git directory', track_path)
+            continue
+        url = get_repo_url(track_path)
+        if not url:
+            print_error('error getting git URL', track_path)
+            continue
+        # add it to config file
+        config.add_section(track_path)
+        config[track_path]['url'] = url
+        changed = True
+    if changed:
+        write_config()
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+def untrack(path: tuple):
+    """untrack one more more repos in one or more directories"""
+    global config
+    read_config()
+    changed = False
+    for untrack_path in path:
+        if untrack_path not in config.sections():
+            print_error('already not being tracked', untrack_path)
+            continue
+        config.remove_section(untrack_path)
+        changed = True
+    if changed:
+        write_config()
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+def ignore(path: tuple):
+    """ignore one more more repos in one or more directories"""
+    global config
+    read_config()
+    changed = False
+    for ignore_path in path:
+        if ignore_path not in config.sections():
+            print_error('not being tracked', ignore_path)
+            continue
+        if config[ignore_path]['ignore'] == 'true':
+            print_error('already ignored', ignore_path)
+            return
+        config[ignore_path]['ignore'] = 'true'
+        changed = True
+    if changed:
+        write_config()
+
+
+@cli.command()
+@click.option('-a', '--all', type=bool, default=False, is_flag=True,
+        help='show "git clone" commands even if the repo already exists on disk')
+def showclone(all: bool):
+    """show "git clone" commands needed to clone missing repos"""
+    global config
+    read_config()
+    paths = get_paths([], all=True)
+    for path in paths:
+        if all or not os.path.isdir(os.path.join(path, '.git')):
+            print('git clone {} {}'.format(config[path]['url'], path))
+    sys.exit()
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.option('-q', '--quiet', type=bool, default=False, is_flag=True, help='be quiet')
+def fetch(path: tuple, quiet: bool):
+    """fetch from origin"""
+    read_config()
+    paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
+    if len(paths_to_fetch) == 0:
+        # TODO: print more meaningful message
+        print('Nothing to do.')
+        return  # might want to chain commands...
+    # fetch from upstream
+    if not quiet:
+        num_processed = 0
+        length = len(paths_to_fetch)
+        progress('Fetching:', num_processed, length)
+    with Pool(processes=cpu_count()) as pool:
+        for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
+            if not quiet:
+                num_processed += 1
+                progress('Fetching:', num_processed, length)
+            # NOTE: here we could add 'error-fetching' to the output if we wanted to show 'check' output later
+            # if isinstance(result, int) and result == 1:
+            #     # there was an error; terminate threads and exit
+            #     pool.terminate()
+            #     break
+            # if isinstance(result, bool) and result:
+            #     if quiet:
+            #         pool.terminate()
+            #         break
+            #     print_error('should not have reached this point')
+            #     pool.terminate()
+            #     break
+    # clear progress bar
+    if not quiet:
+        print('\r\x1b[2K', end='\r')
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+def pull(path: tuple, quiet: bool):
+    '''
+    Pull from origin (if pull required and there are no local changes).
+    Hint: run "gitstat fetch" first.
+    '''
+    read_config()
+    paths_to_check: List[str] = get_paths(list(path), all)
+    if len(paths_to_check) == 0:
+        # TODO: print more meaningful message
+        print('Nothing to do.')
+        return  # might want to chain commands...
+    output = check_paths(paths_to_check)
+    paths_to_pull: List[str] = []
+    for item in output:
+        # only pull from repos with origin changes and no local changes
+        if len(item['changes']) == 1 and item['changes'][0] == 'pull-required':
+            paths_to_pull.append(item['path'])
+    if len(paths_to_pull) == 0:
+        sys.exit()
+    with Pool(processes=cpu_count()) as pool:
+        for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
+            # if isinstance(result, int) and result == 1:
+            #     # there was an error; terminate threads and exit
+            #     pool.terminate()
+            #     break
+            pass
 
 
 # -------------------------------------------------
