@@ -345,6 +345,8 @@ def track(path: tuple):
     read_config()
     changed = False
     for track_path in path:
+        if track_path.endswith('/.git'):
+            track_path = track_path[:-5]
         if track_path in config.sections():
             print_error('already being tracked', track_path)
             continue
