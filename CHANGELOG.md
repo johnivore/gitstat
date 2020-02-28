@@ -10,6 +10,7 @@
 ### Changed
 
 * Use 'Click' to manage command-line options
+* Remove 'update' functionality
 
 
 ## Initial version

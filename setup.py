@@ -6,7 +6,7 @@ VERSION = '0.1'
 setup(
     name='gitstat',
     version=VERSION,
-    description='gitstat is a simple tool to check if your git repos have local changes and succinctly output a summary.',
+    description='A simple tool to check if your git repos have local changes and succinctly output a summary.',
     author='John Begenisich',
     author_email='john.begenisich@outlook.com',
     url='https://gitlab.com/johnivore/gitstat',

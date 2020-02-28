@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+'''
 gitstat.py
 
 Copyright 2019-2020  John Begenisich
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
+'''
 
 import os
 import sys
@@ -209,7 +209,7 @@ def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
             pass
         else:
             if origin_url != config[path]['url']:
-                print_error(path, 'origin URL mismatch (maybe fix with "gitstat update")')
+                print_error(path, 'origin URL mismatch')
                 print('  gitstat: {}'.format(config[path]['url']))
                 print('  origin:  {}'.format(origin_url))
                 changes.append('url-mismatch')
@@ -263,25 +263,11 @@ def checkrepo_bool(path: str) -> bool:
     return False if result == None else True
 
 
-def update_url(path: str):
-    origin_url = get_repo_url(path)
-    if not origin_url:
-        print_error('error getting git URL', path)
-        return
-    if origin_url != config[path]['url']:
-        print(path)
-        print('  old: {}'.format(config[path]['url']))
-        print('  new: {}'.format(origin_url))
-        config[path]['url'] = origin_url
-        write_config()
-
-
 def get_paths(paths: List[str], all=False) -> List[str]:
     # return a list of strings representing zero or more paths to git repos
     # if paths is not None, use those; otherwise, use paths being tracked in config
     # if all == False, skip those flagged to ignore in config
-    # if paths:
-        # TODO: flag if untracked?
+    # TODO: flag if untracked?
     if not paths:
         # no specific paths to check; check all non-ignored paths in the config
         paths = [x for x in config.sections() if x != 'DEFAULT']
@@ -307,11 +293,12 @@ def check_paths(paths: List[str]) -> List[Dict]:
         for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
             if result == None:
                 continue
+            assert isinstance(result, Dict)
             output.append(result)
     return output
 
 
-def check_paths_bool(paths: List[str]) -> int:
+def check_paths_with_exit_code(paths: List[str]) -> int:
     '''
     return an int representing the return code with which we should exit:
         0 for no changes
@@ -341,14 +328,14 @@ def cli():
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True,
         help='be quiet; return 1 if any repo has changes, else return 0')
 def check(path: Tuple[str], all: bool, quiet: bool):
-    """default functionality; check git repos in one or more directories"""
+    '''default functionality; check git repos in one or more directories'''
     freeze_support()
     read_config()
     if quiet:
-        result = check_paths_bool(get_paths(list(path), all))
-        sys.exit(result)
+        int_result = check_paths_with_exit_code(get_paths(list(path), all))
+        sys.exit(int_result)
     # everything went as expected!
-    result = check_paths(get_paths(list(path), all))
+    result: List[Dict] = check_paths(get_paths(list(path), all))
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
@@ -361,7 +348,7 @@ def check(path: Tuple[str], all: bool, quiet: bool):
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
         required=True)
 def track(path: tuple):
-    """track one more more repos in one or more directories"""
+    '''track one more more repos in one or more directories'''
     global config
     freeze_support()
     read_config()
@@ -388,7 +375,7 @@ def track(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 def untrack(path: tuple):
-    """untrack one more more repos in one or more directories"""
+    '''untrack one more more repos in one or more directories'''
     global config
     freeze_support()
     read_config()
@@ -406,7 +393,7 @@ def untrack(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 def ignore(path: tuple):
-    """ignore one more more repos in one or more directories"""
+    '''ignore one more more repos in one or more directories'''
     global config
     freeze_support()
     read_config()
@@ -428,7 +415,7 @@ def ignore(path: tuple):
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
         help='show "git clone" commands even if the repo already exists on disk')
 def showclone(all: bool):
-    """show "git clone" commands needed to clone missing repos"""
+    '''show "git clone" commands needed to clone missing repos'''
     global config
     freeze_support()
     read_config()
@@ -443,7 +430,7 @@ def showclone(all: bool):
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True, help='be quiet')
 def fetch(path: tuple, quiet: bool):
-    """fetch from origin"""
+    '''fetch from origin'''
     freeze_support()
     read_config()
     paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
