@@ -342,6 +342,7 @@ def cli():
         help='be quiet; return 1 if any repo has changes, else return 0')
 def check(path: Tuple[str], all: bool, quiet: bool):
     """default functionality; check git repos in one or more directories"""
+    freeze_support()
     read_config()
     if quiet:
         result = check_paths_bool(get_paths(list(path), all))
@@ -362,6 +363,7 @@ def check(path: Tuple[str], all: bool, quiet: bool):
 def track(path: tuple):
     """track one more more repos in one or more directories"""
     global config
+    freeze_support()
     read_config()
     changed = False
     for track_path in path:
@@ -388,6 +390,7 @@ def track(path: tuple):
 def untrack(path: tuple):
     """untrack one more more repos in one or more directories"""
     global config
+    freeze_support()
     read_config()
     changed = False
     for untrack_path in path:
@@ -405,6 +408,7 @@ def untrack(path: tuple):
 def ignore(path: tuple):
     """ignore one more more repos in one or more directories"""
     global config
+    freeze_support()
     read_config()
     changed = False
     for ignore_path in path:
@@ -426,6 +430,7 @@ def ignore(path: tuple):
 def showclone(all: bool):
     """show "git clone" commands needed to clone missing repos"""
     global config
+    freeze_support()
     read_config()
     paths = get_paths([], all=True)
     for path in paths:
@@ -439,6 +444,7 @@ def showclone(all: bool):
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True, help='be quiet')
 def fetch(path: tuple, quiet: bool):
     """fetch from origin"""
+    freeze_support()
     read_config()
     paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
     if len(paths_to_fetch) == 0:
@@ -479,6 +485,7 @@ def pull(path: tuple, quiet: bool):
     Pull from origin (if pull required and there are no local changes).
     Hint: run "gitstat fetch" first.
     '''
+    freeze_support()
     read_config()
     paths_to_check: List[str] = get_paths(list(path), all)
     if len(paths_to_check) == 0:
@@ -500,10 +507,3 @@ def pull(path: tuple, quiet: bool):
             #     pool.terminate()
             #     break
             pass
-
-
-# -------------------------------------------------
-
-if __name__ == '__main__':
-    freeze_support()
-    main()
