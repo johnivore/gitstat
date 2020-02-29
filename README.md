@@ -19,21 +19,13 @@ when dealing with many git repositories.  It uses multiple processes to speed th
 even if there is a problem with a repository.
 
 
-## Requirements
-
-* Python 3.6+
-* click
-* git
-
-
 ## Installation
 
-It's just one Python script, so you could do something like:
+    git clone https://gitlab.com/johnivore/gitstat.git
+    pip install --user gitstat/
 
-    cp gitstat.py ~/bin/gitstat && chmod +x ~/bin/gitstat
 
-
-## Getting started
+## Quick start
 
 ### Show information about a repository
 
@@ -45,57 +37,47 @@ Note: this is the same as:
 
 ("check" is the default gitstat command.)
 
-### Track a repo
-
-You use `~/myproject` all the time; tell gitsat to remember it:
+You use `~/myproject` all the time; let's tell gitstat to remember it:
 
     gitstat track ~/myproject
 
-(Relative paths are converted to absolute paths in `gitstat`'s config file.)
-
-Now do something like edit/add files, or commit (but don't push) changes, and run `gitstat` without any options.
-
-### Track a bunch of repos
-
-    gitstat track ~/workspace/project1 ~/work/project2 ...
-
-## Usage
-
-Show summary of all tracked repos:
+Now do something like edit/add files in `~/myproject`, or commit (but don't push) changes, and run `gitstat` without any options:
 
     gitstat
 
-Include repos that are up-to-date:
+By default, `gitstat` will only output repos with changes.  To include repos that are up-to-date:
 
     gitstat --all
 
-Fetch from upstream:
+`gitstat` can fetch from origin:
 
     gitstat fetch
 
-Fetch from upstream, then pull (if there are no local changes):
+Note that all commands support specifying one or more paths on the command line; for example:
+
+    gitstat fetch ~/myproject ~/work/proj2 ...
+
+Pull from origin:
 
     gitstat pull
 
-Check only some of your repos:
+Note that `gitstat` will pull only if there are no local changes and if a pull from upstream is required.  You can run `gitstat fetch` to fetch first.
 
-    gitstat check /pato/to/repo /path/to/another/repo ...
-
-There are more options.  Show help:
+`gitstat` can do more.  To get help with individual commands:
 
     gitstat --help
+    gitstat check --help
 
 
 ## Tips & tricks
 
 ### Using with scripts
 
-* Similar to `git`, `gitstat --quiet` prints no output (except on error), and returns 1 if there are changes, else 0.
+Similar to `git`, `gitstat --quiet` prints no output (except on error), and returns 1 if there are changes, else 0.
 
 ### Clone missing repos
 
-* `gitstat showclone` will output a list of `git clone` commands for any repos `gitstat` is tracking, but do not exist on the filesystem.
-* `gitstat showclone --all` will do it for all tracked git repos whether they exist or not.
+If moving to a new computer, or sharing `gitstat`'s config between multiple computers, `gitstat showclone` can be used to output a list of `git clone` commands for any repos `gitstat` is tracking, but do not exist on the filesystem.  Then you can copy and paste the output to clone any missing repos.
 
 ### Track every repo in your home directory
 
