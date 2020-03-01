@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1'
+import gitstat
 
 
 setup(
     name='gitstat',
-    version=VERSION,
+    version=gitstat.VERSION,
     description='Succinctly display information about git repositories.',
     author='John Begenisich',
     author_email='john.begenisich@outlook.com',
@@ -15,7 +15,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
     ],
-    py_modules=['gitstat'],
+    # py_modules=['gitstat'],
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -25,6 +25,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        gitstat=gitstat:cli
+        gitstat=gitstat.gitstat:cli
     ''',
 )

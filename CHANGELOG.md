@@ -7,6 +7,8 @@
 * Support checking repos that are not tracked by gitstat
 * Add a fair amount of type hinting
 * Add 'is-tracked' command
+* setuptools packaging
+* Add --version
 
 ### Changed
 
