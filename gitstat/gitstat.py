@@ -389,7 +389,8 @@ def track(path: tuple):
 
 
 @cli.command()
-@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+@click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
+        required=True)
 def untrack(path: tuple):
     """
     Untrack repo(s).
@@ -408,7 +409,8 @@ def untrack(path: tuple):
 
 
 @cli.command()
-@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+@click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
+        required=True)
 def ignore(path: tuple):
     """
     Ignore repo(s).
@@ -424,6 +426,29 @@ def ignore(path: tuple):
             print_error('already ignored', ignore_path)
             return
         config[ignore_path]['ignore'] = 'true'
+        changed = True
+    if changed:
+        write_config()
+
+
+@cli.command()
+@click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+        required=True)
+def unignore(path: tuple):
+    """
+    Un-ignore repo(s).
+    """
+    global config
+    read_config()
+    changed = False
+    for ignore_path in path:
+        if ignore_path not in config.sections():
+            print_error('not being tracked', ignore_path)
+            continue
+        if config[ignore_path]['ignore'] == 'false':
+            print_error('already un-ignored', ignore_path)
+            return
+        config[ignore_path]['ignore'] = 'false'
         changed = True
     if changed:
         write_config()
