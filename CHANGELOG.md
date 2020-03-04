@@ -1,6 +1,6 @@
 # Gitstat Changelog
 
-## [0.1.0]
+## [0.1.0] 2020-03-04
 
 ### Added
 
@@ -17,9 +17,9 @@
 * Use 'Click' to manage command-line options
 * Remove 'update' command (for now?)
 * Progress bar now uses tqdm
-* For a few commands, replaced '--quiet' with '--progress'
+* For a few commands, replace '--quiet' with '--progress' (so quiet is the default)
 * Improve help text
-* '--all' now only available for the 'check' command
+* '--all' now only available for the 'check' command (other commands use '--include-ignored', etc.)
 
 
 ## Initial version
