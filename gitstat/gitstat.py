@@ -23,6 +23,7 @@ import sys
 from typing import List, Tuple, Dict, Optional, Union
 import subprocess
 from multiprocessing import Pool, freeze_support, cpu_count
+from itertools import repeat
 from pathlib import Path
 import argparse
 import configparser
@@ -246,24 +247,25 @@ def checkrepo_bool(path: str) -> bool:
     """
     Returns a bool if there are changes to the repo.
     This is just a wrapper for checkrepo(); it would be faster
-    if we do the checks "manually" because we can bail as soon as
-    one check indicated there are changes.
+    if we do the checks "manually" because we could bail as soon as
+    one check indicated there are changes.  But this is simpler.
     """
     result = checkrepo(path)
     return False if result == None else True
 
 
-def get_paths(paths: List[str], all=False) -> List[str]:
+def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
     # return a list of strings representing zero or more paths to git repos
-    # if paths is not None, use those; otherwise, use paths being tracked in config
-    # if all == False, skip those flagged to ignore in config
+    # if paths is not empty, use them; otherwise, use paths being tracked in config
+    # if include_ignored == False, skip those flagged to ignore in config
+    # paths are checked if they exist and if they are git repos
     # TODO: flag if untracked?
     if not paths:
         # no specific paths to check; check all non-ignored paths in the config
         paths = [x for x in config.sections() if x != 'DEFAULT']
     new_path_list: List[str] = []
     for path in paths:
-        if config.has_section(path) and not all and config[path]['ignore'] == 'true':
+        if config.has_section(path) and config[path]['ignore'] == 'true' and not include_ignored:
             continue
         if not os.path.isdir(path):
             print_error('not found', path)
@@ -274,14 +276,14 @@ def get_paths(paths: List[str], all=False) -> List[str]:
     return new_path_list
 
 
-def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
+def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) -> List[Dict]:
     """
     return a tuple of tuple representing the output
     """
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
-            for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+            for result in pool.starmap(checkrepo, zip(paths, repeat(include_uptodate)), chunksize=1):
                 pbar.update()
                 if result == None:
                     continue
@@ -290,7 +292,7 @@ def check_paths(paths: List[str], progress_bar=False) -> List[Dict]:
     return output
 
 
-def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
+def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progress_bar: bool) -> int:
     """
     return an int representing the return code with which we should exit:
         0 for no changes
@@ -299,7 +301,7 @@ def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
-            for result in pool.imap_unordered(checkrepo, paths, chunksize=1):
+            for result in pool.starmap(checkrepo, zip(paths, repeat(include_uptodate)), chunksize=1):
                 if result:
                     exit_code = 1
                     pool.terminate()
@@ -313,9 +315,8 @@ def check_paths_with_exit_code(paths: List[str], progress_bar=False) -> int:
 def cli():
     """
     Succinctly display information about one or more git repositories.
-    gitstat looks for unstaged changes; uncommitted changes; untracked,
-    unignored files; unpushed commits; and whether a pull from upstream
-    is required.
+    Gitstat looks for unstaged changes, uncommitted changes, untracked/unignored
+    files, unpushed commits, and whether a pull from upstream is required.
 
     If no paths are specified on the command line, gitstat will show
     information about repos it is tracking.  (Use "track" to track repo(s).)
@@ -328,12 +329,14 @@ def cli():
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
-        help='Show all tracked repos regardless if they have changes.')
+        help='Include repos that are up-to-date.')
+@click.option('--include-ignored', type=bool, default=False, is_flag=True,
+        help='Include repos set by gitstat to be ignored.')
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True,
         help='Be quiet; return 1 if any repo has changes, else return 0.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='Show progress bar.')
-def check(path: Tuple[str], all: bool, quiet: bool, progress: bool):
+def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool):
     """
     Check repo(s).
     """
@@ -345,10 +348,12 @@ def check(path: Tuple[str], all: bool, quiet: bool, progress: bool):
             """))
         sys.exit(0)
     if quiet:
-        int_result = check_paths_with_exit_code(get_paths(list(path), all), progress_bar=progress)
+        int_result = check_paths_with_exit_code(get_paths(list(path), include_ignored=include_ignored),
+                include_uptodate=all, progress_bar=progress)
         sys.exit(int_result)
     # everything went as expected!
-    result: List[Dict] = check_paths(get_paths(list(path), all), progress_bar=progress)
+    result: List[Dict] = check_paths(get_paths(list(path), include_ignored=include_ignored),
+                include_uptodate=all, progress_bar=progress)
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
@@ -455,53 +460,59 @@ def unignore(path: tuple):
 
 
 @cli.command()
-@click.option('-a', '--all', type=bool, default=False, is_flag=True,
-        help='Show "git clone" commands even if the repo already exists on disk.')
-def showclone(all: bool):
+@click.option('--include-existing', type=bool, default=False, is_flag=True,
+        help='Include repos that already exist.')
+@click.option('--include-ignored', type=bool, default=False, is_flag=True,
+        help='Include repos set by gitstat to be ignored.')
+def showclone(include_existing: bool, include_ignored: bool):
     """
     Show "git clone" commands needed to clone missing repos.
     """
     global config
     read_config()
-    paths = get_paths([], all=True)
+    paths = get_paths([], include_ignored=True)
     for path in paths:
-        if all or not os.path.isdir(os.path.join(path, '.git')):
+        if include_existing or not os.path.isdir(os.path.join(path, '.git')):
             print('git clone {} {}'.format(config[path]['url'], path))
     sys.exit()
 
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.option('--include-ignored', type=bool, default=False, is_flag=True,
+        help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='Show progress bar..')
-def fetch(path: tuple, progress: bool):
+def fetch(path: tuple, include_ignored: bool, progress: bool):
     """
     Fetch from origin.
     """
     read_config()
-    paths_to_fetch = get_paths(list(path), True)  # FIXME: all=False if path != []?
+    paths_to_fetch = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_fetch) == 0:
         return  # might want to chain commands...
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths_to_fetch), disable=not progress, leave=False) as pbar:
-            for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
+            for result in pool.starmap(fetch_from_origin, zip(paths_to_fetch, repeat(False)), chunksize=1):
                 pbar.update()
 
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.option('--include-ignored', type=bool, default=False, is_flag=True,
+        help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
         help='Show progress bar.')
-def pull(path: tuple, progress: bool):
+def pull(path: tuple, include_ignored: bool, progress: bool):
     """
-    Pull from origin (no local changes).
+    Pull from origin (if no local changes).
     Hint: run "gitstat fetch" first.
     """
     read_config()
-    paths_to_check: List[str] = get_paths(list(path), all)
+    paths_to_check: List[str] = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_check) == 0:
         return  # might want to chain commands...
-    output = check_paths(paths_to_check)
+    output = check_paths(paths_to_check, include_uptodate=False, progress_bar=progress)
     paths_to_pull: List[str] = []
     for item in output:
         # only pull from repos with origin changes and no local changes
@@ -511,7 +522,7 @@ def pull(path: tuple, progress: bool):
         sys.exit()
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths_to_pull), disable=not progress, leave=False) as pbar:
-            for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
+            for result in pool.starmap(pull_from_origin, zip(paths_to_pull, repeat(False)), chunksize=1):
                 pbar.write(result['path'])
                 pbar.update()
 

@@ -2,21 +2,41 @@
 
 ## About
 
-`gitstat` is a simple tool to check if your git repos have local changes and succinctly output a summary.
+Gitstat is a simple tool to check if your git repos have local changes and succinctly output a summary.
 
 ![(screenshot)](images/screenshots/screenshot.png?raw=true "Basic usage")
 
-`gitstat` finds:
+```
+Usage: gitstat [OPTIONS] COMMAND [ARGS]...
 
-* unstaged changes in the working tree
-* uncommitted changes in the index
-* untracked, unignored files
-* unpushed commits
-* if a pull from upstream is required
+  Succinctly display information about one or more git repositories. Gitstat
+  looks for unstaged changes, uncommitted changes, untracked/unignored
+  files, unpushed commits, and whether a pull from upstream is required.
 
-`gitstat` can also fetch or pull changes from upstream, and has a few other features to improve quality of life
-when dealing with many git repositories.  It uses multiple processes to speed things up, and will try to continue
-even if there is a problem with a repository.
+  If no paths are specified on the command line, gitstat will show
+  information about repos it is tracking.  (Use "track" to track repo(s).)
+
+  Run "gitstat COMMAND --help" for help about a specific command.
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  check*      Check repo(s).
+  fetch       Fetch from origin.
+  ignore      Ignore repo(s).
+  is-tracked  Show whether one or more repos are tracked by gitstat.
+  pull        Pull from origin (if no local changes).
+  showclone   Show "git clone" commands needed to clone missing repos.
+  track       Track repo(s).
+  unignore    Un-ignore repo(s).
+  untrack     Untrack repo(s).
+```
+
+Gitstat is a personal project and there may be bugs.  However, Gitstat has been designed with being careful in mind.
+Gitstat makes no changes to git repos, except for the 'fetch' and 'pull' commands (`gitstat fetch` simply runs `git fetch`,
+and `gitstat pull` will pull from origin *only if* there are no local changes and a pull is required.)
 
 
 ## Installation
@@ -27,43 +47,41 @@ even if there is a problem with a repository.
 
 ## Quick start
 
-### Show information about a repository
+Show information about a repository:
 
     gitstat ~/myproject
 
-Note: this is the same as:
+Note that this is the same as:
 
     gitstat check ~/myproject
 
-("check" is the default gitstat command.)
+("check" is the default command.)
 
 You use `~/myproject` all the time; let's tell gitstat to remember it:
 
     gitstat track ~/myproject
 
-Now do something like edit/add files in `~/myproject`, or commit (but don't push) changes, and run `gitstat` without any options:
+Now when you run Gitstat with no parameters, it will include the status of `~/myproject`.
+
+Try editing/adding files in `~/myproject`, and/or commit (but don't push) changes, and run Gitstat again:
 
     gitstat
 
-By default, `gitstat` will only output repos with changes.  To include repos that are up-to-date:
+By default, Gitstat will only output repos with changes.  To include repos that are up-to-date:
 
     gitstat --all
 
-`gitstat` can fetch from origin:
+Gitstat can fetch from origin:
 
     gitstat fetch
-
-Note that all commands support specifying one or more paths on the command line; for example:
-
-    gitstat fetch ~/myproject ~/work/proj2 ...
 
 Pull from origin:
 
     gitstat pull
 
-Note that `gitstat` will pull only if there are no local changes and if a pull from upstream is required.  You can run `gitstat fetch` to fetch first.
+Gitstat will pull only if there are no local changes and if a pull from upstream is required.  You can run `gitstat fetch` to fetch first.
 
-`gitstat` can do more.  To get help with individual commands:
+Gitstat can do more.  To get help with individual commands:
 
     gitstat --help
     gitstat check --help
@@ -77,13 +95,13 @@ Similar to `git`, `gitstat --quiet` prints no output (except on error), and retu
 
 ### Clone missing repos
 
-If moving to a new computer, or sharing `gitstat`'s config between multiple computers, `gitstat showclone` can be used to output a list of `git clone` commands for any repos `gitstat` is tracking, but do not exist on the filesystem.  Then you can copy and paste the output to clone any missing repos.
+If moving to a new computer, or sharing Gitstat's config between multiple computers, `gitstat showclone` can be used to output a list of `git clone` commands for any repos Gitstat is tracking, but do not exist on the filesystem.  Then you can copy and paste the output to clone any missing repos.
 
 ### Track every repo in your home directory
 
     find ~/ -type d -name .git -exec gitstat track {} \;
 
-(`gitstat` is "smart" enough to know that the parent directory of a directory named `.git` is the actual repository.)
+(Gitstat is "smart" enough to know that the parent directory of a directory named `.git` is the actual repository.)
 
 ### Are you tracking all the repos you want to track?
 
