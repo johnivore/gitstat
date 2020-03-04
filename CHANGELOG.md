@@ -1,6 +1,6 @@
-# `gitstat` Changelog
+# Gitstat Changelog
 
-## [0.1.0] UNRELEASED
+## [0.1.0]
 
 ### Added
 
