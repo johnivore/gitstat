@@ -2,20 +2,25 @@ from setuptools import setup, find_packages
 
 import gitstat
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 
 setup(
-    name='gitstat',
+    name='gitstat-johnivore',
     version=gitstat.VERSION,
-    description='Succinctly display information about git repositories.',
     author='John Begenisich',
     author_email='john.begenisich@outlook.com',
+    description='Succinctly display information about git repositories.',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://gitlab.com/johnivore/gitstat',
+    python_requires='>=3.6',
     classifiers=[
         'Environment :: Console',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
     ],
-    # py_modules=['gitstat'],
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
