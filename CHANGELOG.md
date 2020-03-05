@@ -1,5 +1,12 @@
 # Gitstat Changelog
 
+## [0.1.1] UNRELEASED
+
+### Changed
+
+* Fix bug where 'showclone' always included ignored repos
+
+
 ## [0.1.0] 2020-03-04
 
 ### Added

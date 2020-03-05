@@ -470,7 +470,7 @@ def showclone(include_existing: bool, include_ignored: bool):
     """
     global config
     read_config()
-    paths = get_paths([], include_ignored=True)
+    paths = get_paths([], include_ignored=include_ignored)
     for path in paths:
         if include_existing or not os.path.isdir(os.path.join(path, '.git')):
             print('git clone {} {}'.format(config[path]['url'], path))
