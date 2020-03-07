@@ -61,7 +61,7 @@ def print_error(message: str, repo_path=None, stdout=None, stderr=None):
             print('\033[0;31m{}\033[0m'.format(stderr.decode().strip()))
 
 
-def config_filename():
+def config_filename() -> Path:
     if 'XDG_CONFIG_HOME' in os.environ:
         config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
     else:
@@ -82,34 +82,77 @@ def write_config():
         config.write(file_writer)
 
 
-def fetch_from_origin(path: str):
+def fetch_from_origin(path: str) -> Union[str, int]:
+    """
+    Fetch from origin.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: the path (str) (because with multithreading we want to display our progress)
+        On failure: -1
+    """
     result = subprocess.run(['git', 'fetch', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git fetch" output follows:', result.stdout, result.stderr)
-        return 'error-fetching'
+        return -1
+    return path
 
 
-def pull_from_origin(path: str):
+def pull_from_origin(path: str) -> Union[str, int]:
+    """
+    Pull from origin.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: the path (str) (because with multithreading we want to display our progress)
+        On failure: -1
+    """
     print(f'pulling {path}')
     result = subprocess.run(['git', 'pull', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git pull" output follows:', result.stdout, result.stderr)
-        return 'error-pulling'
+        return -1
+    return path
 
 
-def get_local(path: str):
+def get_local(path: str) -> Union[str, int]:
+    """
+    Find upstream revision.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: str from "git rev-parse @"
+        On failure: -1
+    """
     result = subprocess.run(['git', 'rev-parse', '@'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error('error doing "rev-parse @"; aborting', path, result.stdout, result.stderr)
-        return 1
+        return -1
     return result.stdout.decode().strip()
 
 
-def get_remote(path: str, upstream='@{u}'):
-    # find upstream revision
-    # returns (remote, changes)
+def get_remote(path: str) -> Union[Tuple[str, str], int]:
+    """
+    Find upstream revision.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: A tuple of (remote: str, changes: str)
+            changes can indicate if there is no matching upstream branch (or empty string)
+        On failure: -1
+    """
+    upstream = '@{u}'
     result = subprocess.run(['git', 'rev-parse', upstream], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode == 0:
+        return result.stdout.decode().strip(), ''
         changes = None
     else:
         err = result.stderr.decode().strip()
@@ -118,43 +161,88 @@ def get_remote(path: str, upstream='@{u}'):
             changes = OUTPUT_MESSAGES['pull-required'].format('no matching upstream branch')
         else:
             print_error('error doing "rev-parse {}"; aborting'.format(upstream), path, result.stdout, result.stderr)
-            return 1
+            return -1
     return result.stdout.decode().strip(), changes
 
 
-def update_index(path: str):
-    # update the index
+def update_index(path: str) -> Union[None, int]:
+    """
+    Updates the index.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: None
+        On failure: -1
+    """
     result = subprocess.run(['git', 'update-index', '-q', '--ignore-submodules', '--refresh'], cwd=path)
     if result.returncode != 0:
         print_error('error updating index; aborting', path, result.stdout, result.stderr)
-        return 1
+        return -1
+    return None
 
 
-def get_base(path: str, upstream='@{u}'):
+def get_base(path: str) -> Union[str, int]:
+    """
+    Find as good common ancestors as possible for a merge.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: str representing the base
+        On failure: -1
+    """
+    upstream = '@{u}'
     result = subprocess.run(['git', 'merge-base', '@', upstream],
                             cwd=path,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error('error doing "merge-base @"; aborting', path, result.stdout, result.stderr)
-        return 1
+        return -1
     return result.stdout.decode().strip()
 
 
 def check_unstaged_changes(path: str) -> bool:
-    # return True if unstaged changes in the working tree
+    """
+    Determine whether there are unstaged changes in the working tree.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        bool: True if there are unstaged changes; else False
+    """
     result = subprocess.run(['git', 'diff-files', '--quiet', '--ignore-submodules'], cwd=path)
     return result.returncode != 0
 
 
 def check_uncommitted_changes(path: str) -> bool:
-    # return True if there are uncommitted changes in the index
+    """
+    Determine whether there are uncommitted changes in the index.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        bool: True if there are uncommitted changes in the index; else False
+    """
     result = subprocess.run(['git', 'diff-index', '--cached', '--quiet', 'HEAD', '--ignore-submodules'], cwd=path)
     return result.returncode != 0
 
 
 def check_untracked_files(path: str) -> bool:
-    # return True if there are untracked files
+    """
+    Determine whether there are untracked files.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        bool: True if there are untracked files; else False
+    """
     result = subprocess.run(['git', 'ls-files', '-o', '--exclude-standard'],
                             cwd=path,
                             stdout=subprocess.PIPE,
@@ -163,7 +251,15 @@ def check_untracked_files(path: str) -> bool:
 
 
 def check_unpushed_commits(path: str) -> bool:
-    # return True if thre are unpushed commits
+    """
+    Determine whether there are unpushed commits.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        bool: True if there are unpushed commits; else False
+    """
     # note, no escaping curly braces here
     result = subprocess.run(['git', 'diff', '--quiet', '@{u}..'],
                             cwd=path,
@@ -172,19 +268,41 @@ def check_unpushed_commits(path: str) -> bool:
     return result.returncode != 0
 
 
-def get_repo_url(path: str) -> Optional[str]:
+def get_repo_url(path: str) -> Union[str, int]:
+    """
+    Return the origin URL.
+
+    Args:
+        path (str): The path to the git repo
+
+    Returns:
+        On success: str representing the origin URL
+        On failure: -1
+    """
     # get repo URL; return None on error
     result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], stdout=subprocess.PIPE, cwd=path)
     if result.returncode != 0:
-        return None
+        print_error('error getting git URL', path)
+        return -1
     return result.stdout.decode().strip()
 
 
-def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
+def checkrepo(path: str, even_if_uptodate: bool=False) -> Union[Dict, int, None]:
     """
-    run various checks on a repo
+    Run various checks on a repo to determine its general state.
     if even_if_uptodate == False and there are no changes, return None
     else return a dict of ['path': path, 'changes': List['str']]
+    Return the origin URL.
+
+    Args:
+        path (str): The path to the git repo
+        even_if_uptodate (bool): configure whether to return something even if repo is up-to-date
+
+    Returns:
+        On success: a Dict of {'path': path, 'changes': List of str or None})
+            If "up-to-date" == False and there are no changes, 'changes' will be None; else 'up-to-date' will
+            be included in the list.
+        On failure: -1
     """
     changes: List[str] = []
     pull_required = False
@@ -206,12 +324,20 @@ def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
                 changes.append('url-mismatch')
     # get local, remote, and base revisions
     local = get_local(path)
-    remote, result = get_remote(path)
+    if type(local) == int:  # error already printed
+        return -1
+    remote_result = get_remote(path)
+    if type(remote_result) == int:  # error already printed
+        return -1
+    remote, result = remote_result
     if result:
         changes.append(result)
         no_upstream_branch = True
     if not no_upstream_branch:
+        # get the base so we can compare it to local to determine if a pull is required
         base = get_base(path)
+        if type(base) == int:  # error already printed
+            return -1
         # compare local/remote/base revisions
         if local == remote:
             pass  # up-to-date
@@ -223,7 +349,9 @@ def checkrepo(path: str, even_if_uptodate=False) -> Optional[Dict]:
         else:
             # diverged - shouldn't ever see this?
             changes.append('diverged')
-    update_index(path)
+    result = update_index(path)
+    if type(result) == int:  # error already printed
+        return -1
     if check_unstaged_changes(path):
         changes.append('unstaged')
     if check_uncommitted_changes(path):
@@ -382,8 +510,7 @@ def track(path: tuple):
             print_error('not a git directory', track_path)
             continue
         url = get_repo_url(track_path)
-        if not url:
-            print_error('error getting git URL', track_path)
+        if type(url) == int:  # error already printed
             continue
         # add it to config file
         config.add_section(track_path)
@@ -482,7 +609,7 @@ def showclone(include_existing: bool, include_ignored: bool):
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
         help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
-        help='Show progress bar..')
+        help='Show progress bar.')
 def fetch(path: tuple, include_ignored: bool, progress: bool):
     """
     Fetch from origin.
@@ -493,7 +620,9 @@ def fetch(path: tuple, include_ignored: bool, progress: bool):
         return  # might want to chain commands...
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths_to_fetch), disable=not progress, leave=False) as pbar:
-            for result in pool.starmap(fetch_from_origin, zip(paths_to_fetch, repeat(False)), chunksize=1):
+            for result in pool.imap_unordered(fetch_from_origin, paths_to_fetch, chunksize=1):
+                if type(result) == int:  # error
+                    pass
                 pbar.update()
 
 
@@ -522,8 +651,10 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
         sys.exit()
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths_to_pull), disable=not progress, leave=False) as pbar:
-            for result in pool.starmap(pull_from_origin, zip(paths_to_pull, repeat(False)), chunksize=1):
-                pbar.write(result['path'])
+            for result in pool.imap_unordered(pull_from_origin, paths_to_pull, chunksize=1):
+                if type(result) == int:  # error
+                    continue
+                pbar.write(result)
                 pbar.update()
 
 
