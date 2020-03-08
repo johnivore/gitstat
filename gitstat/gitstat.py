@@ -393,14 +393,24 @@ def checkrepo(path: str, even_if_uptodate: bool=False) -> Union[Dict, int, None]
     return None
 
 
-def checkrepo_bool(path: str) -> bool:
+def checkrepo_bool(path: str, even_if_uptodate: bool=False) -> Union[bool, int]:
     """
     Returns a bool if there are changes to the repo.
     This is just a wrapper for checkrepo(); it would be faster
     if we do the checks "manually" because we could bail as soon as
     one check indicated there are changes.  But this is simpler.
+
+    Args:
+        path (str): The path to the git repo
+        even_if_uptodate (bool): configure whether to return something even if repo is up-to-date
+
+    Returns:
+        On success: True if changes; else False
+        On failure: -1
     """
     result = checkrepo(path)
+    if type(result) == int:
+        return result   # error
     return False if result == None else True
 
 
@@ -451,7 +461,9 @@ def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progres
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
-            for result in pool.starmap(checkrepo, zip(paths, repeat(include_uptodate)), chunksize=1):
+            for result in pool.starmap(checkrepo_bool, zip(paths, repeat(include_uptodate)), chunksize=1):
+                if type(result) == int:
+                    continue  # already printed error
                 if result:
                     exit_code = 1
                     pool.terminate()
