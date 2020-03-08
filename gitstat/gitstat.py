@@ -52,7 +52,18 @@ config = configparser.ConfigParser()
 # -------------------------------------------------
 
 
-def print_error(message: str, repo_path=None, stdout=None, stderr=None):
+def print_error(message: str, repo_path: str, stdout: Optional[bytes]=None, stderr: Optional[bytes]=None):
+    """
+    Print an error message (i.e., from subprocess output).
+
+    Args:
+        message (str): The message to print
+        repo_path (str): The path to the git repo about which this error is regarding
+        stdout (bytes): stdout output
+        stdout (bytes): stderr output
+
+    Returns: Nothing
+    """
     print('\033[0;31m{}{}\033[0m'.format(message, ': {}'.format(repo_path) if repo_path else ''))
     if stdout or stderr:
         if stdout:
@@ -62,6 +73,11 @@ def print_error(message: str, repo_path=None, stdout=None, stderr=None):
 
 
 def config_filename() -> Path:
+    """
+    Get the path to our config file.
+
+    Returns: the Path to the config file
+    """
     if 'XDG_CONFIG_HOME' in os.environ:
         config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
     else:
@@ -70,6 +86,9 @@ def config_filename() -> Path:
 
 
 def read_config():
+    """
+    Read config file into global "config" var.
+    """
     global config
     filename = config_filename()
     if filename.is_file():
@@ -77,6 +96,9 @@ def read_config():
 
 
 def write_config():
+    """
+    Read config file from global "config" var.
+    """
     global config
     with open(config_filename(), 'w') as file_writer:
         config.write(file_writer)
