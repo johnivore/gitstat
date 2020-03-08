@@ -415,13 +415,19 @@ def checkrepo_bool(path: str, even_if_uptodate: bool=False) -> Union[bool, int]:
 
 
 def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
-    # return a list of strings representing zero or more paths to git repos
-    # if paths is not empty, use them; otherwise, use paths being tracked in config
-    # if include_ignored == False, skip those flagged to ignore in config
-    # paths are checked if they exist and if they are git repos
-    # TODO: flag if untracked?
+    """
+    Return a list of strings representing zero or more paths to git repos.
+    Paths are checked if they exist and if they are git repos.
+    If paths is not empty, use them; otherwise, use paths being tracked in config.
+
+    Args:
+        path (List[str]): The paths to the git repos
+        include_ignored (bool): whether to include repos ignored in the config
+
+    Returns:
+        A list of str of paths to git repos
+    """
     if not paths:
-        # no specific paths to check; check all non-ignored paths in the config
         paths = [x for x in config.sections() if x != 'DEFAULT']
     new_path_list: List[str] = []
     for path in paths:
