@@ -1,6 +1,6 @@
 # Gitstat Changelog
 
-## UNRELEASED
+## [0.2.0] 2020-03-06]
 
 ### Added
 
@@ -41,6 +41,6 @@
 * '--all' now only available for the 'check' command (other commands use '--include-ignored', etc.)
 
 
-## Initial version
+## Initial version - 2018-11
 
 * 'check', 'track', 'untrack', 'ignore', 'update', 'showclone', 'fetch' and 'pull' commands
