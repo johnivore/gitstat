@@ -2,9 +2,13 @@
 
 ## UNRELEASED
 
+### Added
+
+* Add rudimentary testing with pytest and tox
+
 ### Changed
 
-* Fx bug where a couple of rare errors were colorized twice
+* Fix bug where a couple of rare errors were colorized twice
 
 
 ## [0.2.0] 2020-03-06
