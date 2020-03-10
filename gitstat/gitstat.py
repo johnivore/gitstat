@@ -53,7 +53,7 @@ config = configparser.ConfigParser()
 # -------------------------------------------------
 
 
-def print_error(message: str, repo_path: str, stdout: Optional[bytes]=None, stderr: Optional[bytes]=None):
+def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, stderr: Optional[bytes] = None):
     """
     Print an error message (i.e., from subprocess output).
 
@@ -310,7 +310,7 @@ def get_repo_url(path: str) -> Union[str, int]:
     return result.stdout.decode().strip()
 
 
-def checkrepo(path: str, even_if_uptodate: bool=False) -> Union[Dict, int, None]:
+def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, None]:
     """
     Run various checks on a repo to determine its general state.
     if even_if_uptodate == False and there are no changes, return None
@@ -394,7 +394,7 @@ def checkrepo(path: str, even_if_uptodate: bool=False) -> Union[Dict, int, None]
     return None
 
 
-def checkrepo_bool(path: str, even_if_uptodate: bool=False) -> Union[bool, int]:
+def checkrepo_bool(path: str, even_if_uptodate: bool = False) -> Union[bool, int]:
     """
     Returns a bool if there are changes to the repo.
     This is just a wrapper for checkrepo(); it would be faster
@@ -411,7 +411,7 @@ def checkrepo_bool(path: str, even_if_uptodate: bool=False) -> Union[bool, int]:
     """
     result = checkrepo(path)
     if type(result) == int:
-        return result   # error
+        return result  # error
     return False if result == None else True
 
 
@@ -511,7 +511,8 @@ def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progr
     """
     read_config()
     if not path and len(config.sections()) == 0:
-        print(dedent("""
+        print(
+            dedent("""
             No repos specified and no repos are being tracked.  You can
             track a repo with "gitstat track /path/to/repo".
             """))
