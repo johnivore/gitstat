@@ -1,6 +1,6 @@
 # Gitstat Changelog
 
-## UNRELEASED
+## [0.2.1] 2020-03-10
 
 ### Added
 
