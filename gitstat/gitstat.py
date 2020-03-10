@@ -483,12 +483,12 @@ def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progres
 @click.version_option(version=VERSION)
 def cli():
     """
-    Succinctly display information about one or more git repositories.
+    Succinctly display information about git repositories.
     Gitstat looks for unstaged changes, uncommitted changes, untracked/unignored
     files, unpushed commits, and whether a pull from upstream is required.
 
     If no paths are specified on the command line, gitstat will show
-    information about repos it is tracking.  (Use "track" to track repo(s).)
+    information about repos it is tracking. (Use "gitstat track" to track repo(s).)
 
     Run "gitstat COMMAND --help" for help about a specific command.
     """

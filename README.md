@@ -2,19 +2,18 @@
 
 ## About
 
-Gitstat is a simple tool to check if your git repos have local changes and succinctly output a summary.
-
 ![(screenshot)](images/screenshots/screenshot.png?raw=true "Basic usage")
 
 ```
 Usage: gitstat [OPTIONS] COMMAND [ARGS]...
 
-  Succinctly display information about one or more git repositories. Gitstat
-  looks for unstaged changes, uncommitted changes, untracked/unignored
-  files, unpushed commits, and whether a pull from upstream is required.
+  Succinctly display information about git repositories. Gitstat looks for
+  unstaged changes, uncommitted changes, untracked/unignored files, unpushed
+  commits, and whether a pull from upstream is required.
 
   If no paths are specified on the command line, gitstat will show
-  information about repos it is tracking.  (Use "track" to track repo(s).)
+  information about repos it is tracking. (Use "gitstat track" to track
+  repo(s).)
 
   Run "gitstat COMMAND --help" for help about a specific command.
 
@@ -34,8 +33,8 @@ Commands:
   untrack     Untrack repo(s).
 ```
 
-Gitstat is a personal project and there may be bugs.  However, Gitstat has been designed with being careful in mind.
-Gitstat makes no changes to git repos, except for the 'fetch' and 'pull' commands (`gitstat fetch` simply runs `git fetch`,
+Gitstat has been designed with being careful in mind.
+Gitstat makes no changes to git repos, except for the 'fetch' and 'pull' commands. (`gitstat fetch` simply runs `git fetch`,
 and `gitstat pull` will pull from origin *only if* there are no local changes and a pull is required.)
 
 
