@@ -55,7 +55,7 @@ config = configparser.ConfigParser()
 
 def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, stderr: Optional[bytes] = None):
     """
-    Print an error message (i.e., from subprocess output).
+    Print an error message (e.g., from subprocess output).
 
     Args:
         message (str): The message to print
@@ -412,7 +412,7 @@ def checkrepo_bool(path: str, even_if_uptodate: bool = False) -> Union[bool, int
     result = checkrepo(path)
     if type(result) == int:
         return result  # error
-    return False if result == None else True
+    return False if result is None else True
 
 
 def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
@@ -452,7 +452,7 @@ def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) ->
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
             for result in pool.starmap(checkrepo, zip(paths, repeat(include_uptodate)), chunksize=1):
                 pbar.update()
-                if result == None:
+                if result is None:
                     continue
                 assert isinstance(result, Dict)
                 output.append(result)
@@ -498,13 +498,13 @@ def cli():
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
-        help='Include repos that are up-to-date.')
+              help='Include repos that are up-to-date.')
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
-        help='Include repos set by gitstat to be ignored.')
+              help='Include repos set by gitstat to be ignored.')
 @click.option('-q', '--quiet', type=bool, default=False, is_flag=True,
-        help='Be quiet; return 1 if any repo has changes, else return 0.')
+              help='Be quiet; return 1 if any repo has changes, else return 0.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
-        help='Show progress bar.')
+              help='Show progress bar.')
 def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool):
     """
     Check repo(s).
@@ -519,11 +519,11 @@ def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progr
         sys.exit(0)
     if quiet:
         int_result = check_paths_with_exit_code(get_paths(list(path), include_ignored=include_ignored),
-                include_uptodate=all, progress_bar=progress)
+                                                include_uptodate=all, progress_bar=progress)
         sys.exit(int_result)
     # everything went as expected!
     result: List[Dict] = check_paths(get_paths(list(path), include_ignored=include_ignored),
-                include_uptodate=all, progress_bar=progress)
+                                     include_uptodate=all, progress_bar=progress)
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
@@ -534,7 +534,7 @@ def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progr
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
-        required=True)
+                required=True)
 def track(path: tuple):
     """
     Track repo(s).
@@ -564,7 +564,7 @@ def track(path: tuple):
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
-        required=True)
+                required=True)
 def untrack(path: tuple):
     """
     Untrack repo(s).
@@ -584,7 +584,7 @@ def untrack(path: tuple):
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
-        required=True)
+                required=True)
 def ignore(path: tuple):
     """
     Ignore repo(s).
@@ -607,7 +607,7 @@ def ignore(path: tuple):
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
-        required=True)
+                required=True)
 def unignore(path: tuple):
     """
     Un-ignore repo(s).
@@ -630,9 +630,9 @@ def unignore(path: tuple):
 
 @cli.command()
 @click.option('--include-existing', type=bool, default=False, is_flag=True,
-        help='Include repos that already exist.')
+              help='Include repos that already exist.')
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
-        help='Include repos set by gitstat to be ignored.')
+              help='Include repos set by gitstat to be ignored.')
 def showclone(include_existing: bool, include_ignored: bool):
     """
     Show "git clone" commands needed to clone missing repos.
@@ -649,9 +649,9 @@ def showclone(include_existing: bool, include_ignored: bool):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
-        help='Include repos set by gitstat to be ignored.')
+              help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
-        help='Show progress bar.')
+              help='Show progress bar.')
 def fetch(path: tuple, include_ignored: bool, progress: bool):
     """
     Fetch from origin.
@@ -671,9 +671,9 @@ def fetch(path: tuple, include_ignored: bool, progress: bool):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
-        help='Include repos set by gitstat to be ignored.')
+              help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
-        help='Show progress bar.')
+              help='Show progress bar.')
 def pull(path: tuple, include_ignored: bool, progress: bool):
     """
     Pull from origin (if no local changes).
@@ -703,7 +703,7 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 @click.option('-q', '--quiet-if-tracked', type=bool, default=False, is_flag=True,
-        help='Don\'t output anything if the repo is being tracked.')
+              help='Don\'t output anything if the repo is being tracked.')
 def is_tracked(path: tuple, quiet_if_tracked: bool):
     """
     Show whether one or more repos are tracked by gitstat.
