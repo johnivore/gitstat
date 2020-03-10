@@ -1,5 +1,12 @@
 # Gitstat Changelog
 
+## UNRELEASED
+
+### Changed
+
+* Fx bug where a couple of rare errors were colorized twice
+
+
 ## [0.2.0] 2020-03-06
 
 ### Added

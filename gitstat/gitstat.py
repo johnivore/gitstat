@@ -25,7 +25,6 @@ import subprocess
 from multiprocessing import Pool, freeze_support, cpu_count
 from itertools import repeat
 from pathlib import Path
-import argparse
 import configparser
 from operator import itemgetter
 from textwrap import dedent
@@ -45,6 +44,8 @@ OUTPUT_MESSAGES = {
     'diverged': '\033[0;31m{}\033[0m'.format('DIVERGED'),
     'error-fetching': '\033[0;31m{}\033[0m'.format('error fetching'),
     'error-pulling': '\033[0;31m{}\033[0m'.format('error pulling'),
+    'no-upstream-branch': '\033[0;31m{}\033[0m'.format('no matching upsteam branch'),
+    'origin-url-error': '\033[0;31m{}\033[0m'.format('error in origin URL'),
 }
 
 config = configparser.ConfigParser()
@@ -180,7 +181,7 @@ def get_remote(path: str) -> Union[Tuple[str, str], int]:
         err = result.stderr.decode().strip()
         if 'no upstream configured' in err:
             # fatal: no upstream configured for branch 'dummy'
-            changes = OUTPUT_MESSAGES['pull-required'].format('no matching upstream branch')
+            changes = 'no-upstream-branch'
         else:
             print_error('error doing "rev-parse {}"; aborting'.format(upstream), path, result.stdout, result.stderr)
             return -1
@@ -333,7 +334,7 @@ def checkrepo(path: str, even_if_uptodate: bool=False) -> Union[Dict, int, None]
     origin_url = get_repo_url(path)
     if not origin_url:
         print_error('error getting git URL', path)
-        changes.append(OUTPUT_MESSAGES['untracked'].format('origin URL error'))
+        changes.append('origin-url-error')
     else:
         if not config.has_section(path):
             # TODO: sometimes want to warn the user?
