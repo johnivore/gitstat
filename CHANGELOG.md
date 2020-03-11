@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## UNRELEASED
+
+### Changed
+
+* Show more help when tracking no repos and no paths specified on command line
+
 ## [0.2.1] 2020-03-10
 
 ### Added

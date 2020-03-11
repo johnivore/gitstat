@@ -7,13 +7,17 @@
 ```
 Usage: gitstat [OPTIONS] COMMAND [ARGS]...
 
-  Succinctly display information about git repositories. Gitstat looks for
-  unstaged changes, uncommitted changes, untracked/unignored files, unpushed
-  commits, and whether a pull from upstream is required.
+  Succinctly display information about git repositories.
 
-  If no paths are specified on the command line, gitstat will show
-  information about repos it is tracking. (Use "gitstat track" to track
-  repo(s).)
+  Gitstat looks for unstaged changes, uncommitted changes,
+  untracked/unignored files, unpushed commits, and whether a pull from
+  upstream is required.
+
+  Gitstat can maintain a list of repos about which it will report. Use
+  "gitstat track" to add repo(s) to its list.
+
+  If no paths to git repos are specified on the command line, gitstat will
+  show information about the repos it is tracking.
 
   Run "gitstat COMMAND --help" for help about a specific command.
 

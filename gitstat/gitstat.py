@@ -484,11 +484,15 @@ def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progres
 def cli():
     """
     Succinctly display information about git repositories.
+
     Gitstat looks for unstaged changes, uncommitted changes, untracked/unignored
     files, unpushed commits, and whether a pull from upstream is required.
 
-    If no paths are specified on the command line, gitstat will show
-    information about repos it is tracking. (Use "gitstat track" to track repo(s).)
+    Gitstat can maintain a list of repos about which it will report.
+    Use "gitstat track" to add repo(s) to its list.
+
+    If no paths to git repos are specified on the command line, gitstat will show
+    information about the repos it is tracking.
 
     Run "gitstat COMMAND --help" for help about a specific command.
     """
@@ -505,18 +509,22 @@ def cli():
               help='Be quiet; return 1 if any repo has changes, else return 0.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
               help='Show progress bar.')
-def check(path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool):
+@click.pass_context
+def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool):
     """
     Check repo(s).
     """
+    ctx.ensure_object(dict)
     read_config()
     if not path and len(config.sections()) == 0:
         print(
             dedent("""
-            No repos specified and no repos are being tracked.  You can
-            track a repo with "gitstat track /path/to/repo".
+            No repos specified and no repos are being tracked.
+            Either specify path(s) to git repos on the command line, or
+            track repo(s) with "gitstat track /path/to/repo".
             """))
-        sys.exit(0)
+        # show top level help and exit
+        ctx.fail(ctx.find_root().get_help())
     if quiet:
         int_result = check_paths_with_exit_code(get_paths(list(path), include_ignored=include_ignored),
                                                 include_uptodate=all, progress_bar=progress)

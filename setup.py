@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 import gitstat
 
-with open("README.md", "r") as fh:
+with open('README.md') as fh:
     long_description = fh.read()
 
 
