@@ -276,6 +276,8 @@ def check_untracked_files(path: str) -> bool:
 def check_unpushed_commits(path: str) -> bool:
     """
     Determine whether there are unpushed commits.
+    Note this just calls "git diff", so this will also return True
+    if a pull from origin is required.
 
     Args:
         path (str): The path to the git repo
@@ -328,23 +330,18 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
         On failure: -1
     """
     changes: List[str] = []
-    pull_required = False
-    no_upstream_branch = False
     # check that the origin URL matches our config file
     origin_url = get_repo_url(path)
     if not origin_url:
         print_error('error getting git URL', path)
         changes.append('origin-url-error')
     else:
-        if not config.has_section(path):
-            # TODO: sometimes want to warn the user?
-            pass
-        else:
-            if origin_url != config[path]['url']:
-                print_error(path, 'origin URL mismatch')
-                print('  gitstat: {}'.format(config[path]['url']))
-                print('  origin:  {}'.format(origin_url))
-                changes.append('url-mismatch')
+        # check origin URL matches URL in gitstat config
+        if origin_url != config[path]['url']:
+            print_error(path, 'origin URL mismatch')
+            print('  gitstat: {}'.format(config[path]['url']))
+            print('  origin:  {}'.format(origin_url))
+            changes.append('url-mismatch')
     # get local, remote, and base revisions
     local = get_local(path)
     if type(local) == int:  # error already printed
@@ -354,9 +351,9 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
         return -1
     remote, result = remote_result
     if result:
+        # no origin branch
         changes.append(result)
-        no_upstream_branch = True
-    if not no_upstream_branch:
+    else:
         # get the base so we can compare it to local to determine if a pull is required
         base = get_base(path)
         if type(base) == int:  # error already printed
@@ -366,7 +363,6 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
             pass  # up-to-date
         elif local == base:
             changes.append('pull-required')
-            pull_required = True
         elif remote == base:
             pass  # need to push - later we'll do a git diff which will catch this and other situations)
         else:
@@ -383,14 +379,14 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
         changes.append('untracked')
     # When a pull is required, git-diff will indicate there's a difference, and we should pull first anyway.
     # so skip this check when we need to pull.
-    if not pull_required:
+    if 'pull-required' not in changes:
         if check_unpushed_commits(path):
             changes.append('unpushed')
     if not changes and even_if_uptodate:
         changes.append('up-to-date')
     # if something changed, return the changes; else nothing
     if changes:
-        return {'path': path, 'changes': changes}  # TODO: we already know the path; why return it again?
+        return {'path': path, 'changes': changes}  # return the path to ease using the result with subprocessing
     return None
 
 
