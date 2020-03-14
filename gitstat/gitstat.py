@@ -346,7 +346,7 @@ def get_repo_url(path: str) -> Union[str, int]:
     # get repo URL; return None on error
     result = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], stdout=subprocess.PIPE, cwd=path)
     if result.returncode != 0:
-        print_error('error getting git URL', path)
+        # print_error('error getting git URL', path)
         return -1
     return result.stdout.decode().strip()
 
@@ -370,9 +370,8 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
     changes: List[GitStatus] = []
     # check that the origin URL matches our config file
     origin_url = get_repo_url(path)
-    if not origin_url:
-        print_error('error getting git URL', path)
-        changes.append(GitStatus.ERROR_ORIGIN_URL)
+    if type(origin_url) == int:  # error
+        return {'path': path, 'changes': [GitStatus.ERROR_ORIGIN_URL]}
     else:
         # check origin URL matches URL in gitstat config
         # skip this check if the repo is not being tracked by gitstat
@@ -489,6 +488,8 @@ def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) ->
                 pbar.update()
                 if result is None:
                     continue
+                if type(result) == int:
+                    continue  # already printed error
                 assert isinstance(result, Dict)
                 output.append(result)
     return output
@@ -751,7 +752,7 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
               help='Don\'t output anything if the repo is being tracked.')
 def is_tracked(path: tuple, quiet_if_tracked: bool):
     """
-    Show whether one or more repos are tracked by gitstat.
+    Show whether repo(s) are tracked by gitstat.
     """
     global config
     read_config()
