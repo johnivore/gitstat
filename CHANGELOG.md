@@ -56,9 +56,9 @@
 
 ### Changed
 
-* Use 'Click' to manage command-line options
+* Use [Click](https://click.palletsprojects.com/) to manage command-line options
 * Remove 'update' command (for now?)
-* Progress bar now uses tqdm
+* Progress bar now uses [tqdm](https://github.com/tqdm/tqdm)
 * For a few commands, replace '--quiet' with '--progress' (so quiet is the default)
 * Improve help text
 * '--all' now only available for the 'check' command (other commands use '--include-ignored', etc.)
