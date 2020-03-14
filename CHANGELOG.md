@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Added
+
+* Add --color/--no-color options
+
 ### Changed
 
 * Use [colr](https://github.com/welbornprod/colr) for colorization

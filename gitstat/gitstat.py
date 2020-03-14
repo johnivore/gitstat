@@ -138,6 +138,13 @@ def write_config():
         config.write(file_writer)
 
 
+def colorize_status(status: GitStatus, use_color: bool = True):
+    if not use_color:
+        return OUTPUT_MESSAGES[status]
+    c = DEFAULT_COLORS[status] if status in DEFAULT_COLORS else 'red'
+    return color(OUTPUT_MESSAGES[status], fore=c)
+
+
 def fetch_from_origin(path: str) -> Union[str, int]:
     """
     Fetch from origin.
@@ -527,13 +534,6 @@ def cli():
     freeze_support()
 
 
-def colorize_status(status: GitStatus, use_color: bool = True):
-    if not use_color:
-        return OUTPUT_MESSAGES[status]
-    c = DEFAULT_COLORS[status] if status in DEFAULT_COLORS else 'red'
-    return color(OUTPUT_MESSAGES[status], fore=c)
-
-
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
@@ -544,8 +544,10 @@ def colorize_status(status: GitStatus, use_color: bool = True):
               help='Be quiet; return 1 if any repo has changes, else return 0.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
               help='Show progress bar.')
+@click.option('--color/--no-color', default=True, help='Colorize output.')
 @click.pass_context
-def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool):
+def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool,
+          color: bool):
     """
     Check repo(s).
     """
@@ -571,8 +573,7 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
         for item in sorted(result, key=itemgetter('path')):
-            # changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
-            changes = ', '.join(colorize_status(i) for i in item['changes']).strip()
+            changes = ', '.join(colorize_status(i, use_color=color) for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
 
 
