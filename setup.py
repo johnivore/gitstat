@@ -34,6 +34,7 @@ setup(
     install_requires=[
         'Click',
         'click-default-group',
+        'colr',
         'tqdm',
     ],
     entry_points="""

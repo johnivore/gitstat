@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import sys
 from typing import List, Tuple, Dict, Optional, Union
+from enum import Enum, unique, auto
 import subprocess
 from multiprocessing import Pool, freeze_support, cpu_count
 from itertools import repeat
@@ -31,22 +32,54 @@ from textwrap import dedent
 import click
 from click_default_group import DefaultGroup
 from tqdm import tqdm
+from colr import color
 from . import VERSION
 
+
+@unique
+class GitStatus(Enum):
+    UNSTAGED = auto()
+    UNCOMMITTED = auto()
+    UNTRACKED = auto()
+    UNPUSHED = auto()
+    PULL_REQUIRED = auto()
+    UP_TO_DATE = auto()
+    DIVERGED = auto()
+    # these are more like errors
+    URL_MISMATCH = auto()
+    ERROR_FETCHING = auto()
+    ERROR_PULLING = auto()
+    NO_UPSTREAM_BRANCH = auto()
+    ERROR_ORIGIN_URL = auto()
+
+    def __str__(self):
+        return self.name
+
+
 OUTPUT_MESSAGES = {
-    'unstaged': '\033[0;33m{}\033[0m'.format('unstaged changes'),
-    'uncommitted': '\033[0;33m{}\033[0m'.format('uncommitted changes'),
-    'untracked': '\033[0;31m{}\033[0m'.format('untracked files'),
-    'unpushed': '\033[0;36m{}\033[0m'.format('unpushed commits'),
-    'pull-required': '\033[0;32m{}\033[0m'.format('pull required'),
-    'up-to-date': '\033[0;32m{}\033[0m'.format('up to date'),
-    'url-mismatch': '\033[0;31m{}\033[0m'.format('URL mismatch'),
-    'diverged': '\033[0;31m{}\033[0m'.format('DIVERGED'),
-    'error-fetching': '\033[0;31m{}\033[0m'.format('error fetching'),
-    'error-pulling': '\033[0;31m{}\033[0m'.format('error pulling'),
-    'no-upstream-branch': '\033[0;31m{}\033[0m'.format('no matching upsteam branch'),
-    'origin-url-error': '\033[0;31m{}\033[0m'.format('error in origin URL'),
+    GitStatus.UNSTAGED: 'unstaged changes',
+    GitStatus.UNCOMMITTED: 'uncommitted changes',
+    GitStatus.UNTRACKED: 'untracked files',
+    GitStatus.UNPUSHED: 'unpushed commits',
+    GitStatus.PULL_REQUIRED: 'pull required',
+    GitStatus.UP_TO_DATE: 'up to date',
+    GitStatus.URL_MISMATCH: 'URL mismatch',
+    GitStatus.DIVERGED: 'DIVERGED',
+    GitStatus.ERROR_FETCHING: 'error fetching',
+    GitStatus.ERROR_PULLING: 'error pulling',
+    GitStatus.NO_UPSTREAM_BRANCH: 'no matching upsteam branch',
+    GitStatus.ERROR_ORIGIN_URL: 'error in origin URL',
 }
+
+DEFAULT_COLORS = {
+    GitStatus.UNSTAGED: 'green',
+    GitStatus.UNCOMMITTED: 'yellow',
+    GitStatus.UNTRACKED: 'red',
+    GitStatus.UNPUSHED: 'cyan',
+    GitStatus.PULL_REQUIRED: 'magenta',
+    GitStatus.UP_TO_DATE: 'green',
+}
+
 
 config = configparser.ConfigParser()
 
@@ -160,7 +193,7 @@ def get_local(path: str) -> Union[str, int]:
     return result.stdout.decode().strip()
 
 
-def get_remote(path: str) -> Union[Tuple[str, str], int]:
+def get_remote(path: str) -> Union[Tuple[str, Optional[GitStatus]], int]:
     """
     Find upstream revision.
 
@@ -168,20 +201,19 @@ def get_remote(path: str) -> Union[Tuple[str, str], int]:
         path (str): The path to the git repo
 
     Returns:
-        On success: A tuple of (remote: str, changes: str)
+        On success: A tuple of (remote: str, changes: GitStatus)
             changes can indicate if there is no matching upstream branch (or empty string)
         On failure: -1
     """
     upstream = '@{u}'
     result = subprocess.run(['git', 'rev-parse', upstream], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode == 0:
-        return result.stdout.decode().strip(), ''
-        changes = None
+        return result.stdout.decode().strip(), None
     else:
         err = result.stderr.decode().strip()
         if 'no upstream configured' in err:
             # fatal: no upstream configured for branch 'dummy'
-            changes = 'no-upstream-branch'
+            changes = GitStatus.NO_UPSTREAM_BRANCH
         else:
             print_error('error doing "rev-parse {}"; aborting'.format(upstream), path, result.stdout, result.stderr)
             return -1
@@ -315,33 +347,33 @@ def get_repo_url(path: str) -> Union[str, int]:
 def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, None]:
     """
     Run various checks on a repo to determine its general state.
-    if even_if_uptodate == False and there are no changes, return None
-    else return a dict of ['path': path, 'changes': List['str']]
-    Return the origin URL.
+    If even_if_uptodate == False and there are no changes, return None;
+    else return a dict of {'path': path, 'changes': List[GitStatus]}
 
     Args:
         path (str): The path to the git repo
         even_if_uptodate (bool): configure whether to return something even if repo is up-to-date
 
     Returns:
-        On success: a Dict of {'path': path, 'changes': List of str or None})
+        On success: a Dict of {'path': path, 'changes': List of GitStat or None})
             If "up-to-date" == False and there are no changes, 'changes' will be None; else 'up-to-date' will
             be included in the list.
         On failure: -1
     """
-    changes: List[str] = []
+    changes: List[GitStatus] = []
     # check that the origin URL matches our config file
     origin_url = get_repo_url(path)
     if not origin_url:
         print_error('error getting git URL', path)
-        changes.append('origin-url-error')
+        changes.append(GitStatus.ERROR_ORIGIN_URL)
     else:
         # check origin URL matches URL in gitstat config
-        if origin_url != config[path]['url']:
+        # skip this check if the repo is not being tracked by gitstat
+        if config.has_section(path) and origin_url != config[path]['url']:
             print_error(path, 'origin URL mismatch')
             print('  gitstat: {}'.format(config[path]['url']))
             print('  origin:  {}'.format(origin_url))
-            changes.append('url-mismatch')
+            changes.append(GitStatus.URL_MISMATCH)
     # get local, remote, and base revisions
     local = get_local(path)
     if type(local) == int:  # error already printed
@@ -362,28 +394,28 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
         if local == remote:
             pass  # up-to-date
         elif local == base:
-            changes.append('pull-required')
+            changes.append(GitStatus.PULL_REQUIRED)
         elif remote == base:
             pass  # need to push - later we'll do a git diff which will catch this and other situations)
         else:
             # diverged - shouldn't ever see this?
-            changes.append('diverged')
+            changes.append(GitStatus.DIVERGED)
     result = update_index(path)
     if type(result) == int:  # error already printed
         return -1
     if check_unstaged_changes(path):
-        changes.append('unstaged')
+        changes.append(GitStatus.UNSTAGED)
     if check_uncommitted_changes(path):
-        changes.append('uncommitted')
+        changes.append(GitStatus.UNCOMMITTED)
     if check_untracked_files(path):
-        changes.append('untracked')
+        changes.append(GitStatus.UNTRACKED)
     # When a pull is required, git-diff will indicate there's a difference, and we should pull first anyway.
     # so skip this check when we need to pull.
     if 'pull-required' not in changes:
         if check_unpushed_commits(path):
-            changes.append('unpushed')
+            changes.append(GitStatus.UNPUSHED)
     if not changes and even_if_uptodate:
-        changes.append('up-to-date')
+        changes.append(GitStatus.UP_TO_DATE)
     # if something changed, return the changes; else nothing
     if changes:
         return {'path': path, 'changes': changes}  # return the path to ease using the result with subprocessing
@@ -495,6 +527,13 @@ def cli():
     freeze_support()
 
 
+def colorize_status(status: GitStatus, use_color: bool = True):
+    if not use_color:
+        return OUTPUT_MESSAGES[status]
+    c = DEFAULT_COLORS[status] if status in DEFAULT_COLORS else 'red'
+    return color(OUTPUT_MESSAGES[status], fore=c)
+
+
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
 @click.option('-a', '--all', type=bool, default=False, is_flag=True,
@@ -532,7 +571,8 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
         for item in sorted(result, key=itemgetter('path')):
-            changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
+            # changes = ', '.join(OUTPUT_MESSAGES[i] for i in item['changes']).strip()
+            changes = ', '.join(colorize_status(i) for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
 
 

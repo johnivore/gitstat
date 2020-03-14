@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 from gitstat import gitstat
+from gitstat.gitstat import GitStatus
+
+
+def test():
+    # check each GitStatus has a matching output message
+    for status in GitStatus:
+        if status not in gitstat.OUTPUT_MESSAGES:
+            print('matching message for {} not found.'.format(status))
+            assert False
 
 
 def test_checkrepo():
-    result = gitstat.checkrepo('../gitstat-tests')
-    assert result['path'] == '../gitstat-tests'
-    assert 'untracked' in result['changes']
-    assert 'unpushed' in result['changes']
-    assert 'uncommitted' in result['changes']
+    test_repo_path = str(Path('../gitstat-tests').resolve())
+    result = gitstat.checkrepo(test_repo_path)
+    assert result['path'] == test_repo_path
+    assert GitStatus.UNTRACKED in result['changes']
+    assert GitStatus.UNPUSHED in result['changes']
+    assert GitStatus.UNCOMMITTED in result['changes']

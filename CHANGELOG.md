@@ -4,6 +4,8 @@
 
 ### Changed
 
+* Use [colr](https://github.com/welbornprod/colr) for colorization
+* Fix bug where checking for URL mismatch of untracked repos would cause an exception
 * Show more help when tracking no repos and no paths specified on command line
 
 ## [0.2.1] 2020-03-10
