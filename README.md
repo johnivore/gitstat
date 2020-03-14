@@ -42,6 +42,12 @@ Gitstat makes no changes to git repos, except for the 'fetch' and 'pull' command
 and `gitstat pull` will pull from origin *only if* there are no local changes and a pull is required.)
 
 
+## Requirements
+
+* Python 3.6+
+* git
+
+
 ## Installation
 
     git clone https://gitlab.com/johnivore/gitstat.git
