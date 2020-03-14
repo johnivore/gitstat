@@ -418,7 +418,7 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
         changes.append(GitStatus.UNTRACKED)
     # When a pull is required, git-diff will indicate there's a difference, and we should pull first anyway.
     # so skip this check when we need to pull.
-    if 'pull-required' not in changes:
+    if GitStatus.PULL_REQUIRED not in changes:
         if check_unpushed_commits(path):
             changes.append(GitStatus.UNPUSHED)
     if not changes and even_if_uptodate:
@@ -732,7 +732,7 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
     paths_to_pull: List[str] = []
     for item in output:
         # only pull from repos with origin changes and no local changes
-        if len(item['changes']) == 1 and item['changes'][0] == 'pull-required':
+        if len(item['changes']) == 1 and item['changes'][0] == GitStatus.PULL_REQUIRED:
             paths_to_pull.append(item['path'])
     if len(paths_to_pull) == 0:
         sys.exit()
