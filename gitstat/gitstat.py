@@ -29,10 +29,11 @@ from pathlib import Path
 import configparser
 from operator import itemgetter
 from textwrap import dedent
+from ast import literal_eval
 import click
 from click_default_group import DefaultGroup
 from tqdm import tqdm
-from colr import color
+from colr import color, ColorCode
 from . import VERSION
 
 
@@ -71,17 +72,20 @@ OUTPUT_MESSAGES = {
     GitStatus.ERROR_ORIGIN_URL: 'error in origin URL',
 }
 
-DEFAULT_COLORS = {
-    GitStatus.UNSTAGED: 'green',
-    GitStatus.UNCOMMITTED: 'yellow',
-    GitStatus.UNTRACKED: 'red',
-    GitStatus.UNPUSHED: 'cyan',
-    GitStatus.PULL_REQUIRED: 'magenta',
-    GitStatus.UP_TO_DATE: 'green',
+COLORS = {
+    GitStatus.UNSTAGED: ColorCode('green').code,
+    GitStatus.UNCOMMITTED: ColorCode('yellow').code,
+    GitStatus.UNTRACKED: ColorCode('red').code,
+    GitStatus.UNPUSHED: ColorCode('cyan').code,
+    GitStatus.PULL_REQUIRED: ColorCode('magenta').code,
+    GitStatus.UP_TO_DATE: ColorCode('green').code,
 }
 
-
-config = configparser.ConfigParser()
+# Gitstat uses two config files:
+#   1. Gitstat options
+#   2. Repos being tracked by gitstat
+REPOS_CONFIG = configparser.ConfigParser()
+OPTIONS_CONFIG = configparser.ConfigParser()
 
 # -------------------------------------------------
 
@@ -106,42 +110,85 @@ def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, st
             print('\033[0;31m{}\033[0m'.format(stderr.decode().strip()))
 
 
-def config_filename() -> Path:
+def repos_config_filename() -> Path:
     """
-    Get the path to our config file.
+    Get the path to our repos config file.
 
-    Returns: the Path to the config file
+    Returns: the Path to the repos config file
     """
     if 'XDG_CONFIG_HOME' in os.environ:
-        config_filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat.conf')
+        filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat', 'repos.conf')
     else:
-        config_filename = Path(Path.home(), '.config', 'gitstat.conf')
-    return config_filename
+        filename = Path(Path.home(), '.config', 'gitstat', 'repos.conf')
+    return filename
 
 
-def read_config():
+def read_repos_config():
     """
-    Read config file into global "config" var.
+    Read repos config file into global "REPOS_CONFIG" var.
     """
-    global config
-    filename = config_filename()
+    global REPOS_CONFIG
+    filename = repos_config_filename()
     if filename.is_file():
-        config.read(filename)
+        REPOS_CONFIG.read(filename)
 
 
-def write_config():
+def write_repos_config():
     """
-    Read config file from global "config" var.
+    Write repos config file to global "REPOS_CONFIG" var.
     """
-    global config
-    with open(config_filename(), 'w') as file_writer:
-        config.write(file_writer)
+    global REPOS_CONFIG
+    filename = repos_config_filename()
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    with open(repos_config_filename(), 'w') as file_writer:
+        REPOS_CONFIG.write(file_writer)
+
+
+def options_config_filename() -> Path:
+    """
+    Get the path to our options config file.
+
+    Returns: the Path to the options config file
+    """
+    if 'XDG_CONFIG_HOME' in os.environ:
+        filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat', 'gitstat.conf')
+    else:
+        filename = Path(Path.home(), '.config', 'gitstat', 'gitstat.conf')
+    return filename
+
+
+def read_options_config():
+    """
+    Read config file into global "OPTIONS_CONFIG" var.
+    """
+    global OPTIONS_CONFIG
+    filename = options_config_filename()
+    if filename.is_file():
+        OPTIONS_CONFIG.read(filename)
+    # update colors
+    if 'colors' in OPTIONS_CONFIG:
+        for option in OPTIONS_CONFIG['colors']:
+            option = option.upper()  # ConfigParser converts option strings to lowercase
+            try:
+                git_status = getattr(GitStatus, option)
+            except AttributeError:
+                print('"{}" is not a valid status'.format(option))
+                continue
+            try:
+                value = OPTIONS_CONFIG['colors'][option]
+                if '(' in value:
+                    value = literal_eval(value)
+                color_code = ColorCode(value).code
+            except ValueError:
+                print('"{}" is not a valid color'.format(OPTIONS_CONFIG['colors'][option]))
+                continue
+            COLORS[git_status] = color_code
 
 
 def colorize_status(status: GitStatus, use_color: bool = True):
     if not use_color:
         return OUTPUT_MESSAGES[status]
-    c = DEFAULT_COLORS[status] if status in DEFAULT_COLORS else 'red'
+    c = COLORS[status] if status in COLORS else 'red'
     return color(OUTPUT_MESSAGES[status], fore=c)
 
 
@@ -373,11 +420,11 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
     if type(origin_url) == int:  # error
         return {'path': path, 'changes': [GitStatus.ERROR_ORIGIN_URL]}
     else:
-        # check origin URL matches URL in gitstat config
+        # check origin URL matches URL in gitstat REPOS_CONFIG
         # skip this check if the repo is not being tracked by gitstat
-        if config.has_section(path) and origin_url != config[path]['url']:
+        if REPOS_CONFIG.has_section(path) and origin_url != REPOS_CONFIG[path]['url']:
             print_error(path, 'origin URL mismatch')
-            print('  gitstat: {}'.format(config[path]['url']))
+            print('  gitstat: {}'.format(REPOS_CONFIG[path]['url']))
             print('  origin:  {}'.format(origin_url))
             changes.append(GitStatus.URL_MISMATCH)
     # get local, remote, and base revisions
@@ -463,10 +510,10 @@ def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
         A list of str of paths to git repos
     """
     if not paths:
-        paths = [x for x in config.sections() if x != 'DEFAULT']
+        paths = [x for x in REPOS_CONFIG.sections()]
     new_path_list: List[str] = []
     for path in paths:
-        if config.has_section(path) and config[path]['ignore'] == 'true' and not include_ignored:
+        if REPOS_CONFIG.has_section(path) and REPOS_CONFIG[path]['ignore'] == 'true' and not include_ignored:
             continue
         if not os.path.isdir(path):
             print_error('not found', path)
@@ -533,6 +580,8 @@ def cli():
     Run "gitstat COMMAND --help" for help about a specific command.
     """
     freeze_support()
+    read_options_config()
+    read_repos_config()
 
 
 @cli.command()
@@ -553,8 +602,7 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
     Check repo(s).
     """
     ctx.ensure_object(dict)
-    read_config()
-    if not path and len(config.sections()) == 0:
+    if not path and len(REPOS_CONFIG.sections()) == 0:
         print(
             dedent("""
             No repos specified and no repos are being tracked.
@@ -585,13 +633,12 @@ def track(path: tuple):
     """
     Track repo(s).
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     changed = False
     for track_path in path:
         if track_path.endswith('/.git'):
             track_path = track_path[:-5]
-        if track_path in config.sections():
+        if track_path in REPOS_CONFIG.sections():
             print_error('already being tracked', track_path)
             continue
         if not os.path.isdir(os.path.join(track_path, '.git')):
@@ -601,11 +648,11 @@ def track(path: tuple):
         if type(url) == int:  # error already printed
             continue
         # add it to config file
-        config.add_section(track_path)
-        config[track_path]['url'] = url
+        REPOS_CONFIG.add_section(track_path)
+        REPOS_CONFIG[track_path]['url'] = url
         changed = True
     if changed:
-        write_config()
+        write_repos_config()
 
 
 @cli.command()
@@ -615,17 +662,16 @@ def untrack(path: tuple):
     """
     Untrack repo(s).
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     changed = False
     for untrack_path in path:
-        if untrack_path not in config.sections():
+        if untrack_path not in REPOS_CONFIG.sections():
             print_error('already not being tracked', untrack_path)
             continue
-        config.remove_section(untrack_path)
+        REPOS_CONFIG.remove_section(untrack_path)
         changed = True
     if changed:
-        write_config()
+        write_repos_config()
 
 
 @cli.command()
@@ -635,20 +681,19 @@ def ignore(path: tuple):
     """
     Ignore repo(s).
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     changed = False
     for ignore_path in path:
-        if ignore_path not in config.sections():
+        if ignore_path not in REPOS_CONFIG.sections():
             print_error('not being tracked', ignore_path)
             continue
-        if config[ignore_path]['ignore'] == 'true':
+        if REPOS_CONFIG[ignore_path]['ignore'] == 'true':
             print_error('already ignored', ignore_path)
             return
-        config[ignore_path]['ignore'] = 'true'
+        REPOS_CONFIG[ignore_path]['ignore'] = 'true'
         changed = True
     if changed:
-        write_config()
+        write_repos_config()
 
 
 @cli.command()
@@ -658,20 +703,19 @@ def unignore(path: tuple):
     """
     Un-ignore repo(s).
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     changed = False
     for ignore_path in path:
-        if ignore_path not in config.sections():
+        if ignore_path not in REPOS_CONFIG.sections():
             print_error('not being tracked', ignore_path)
             continue
-        if config[ignore_path]['ignore'] == 'false':
+        if REPOS_CONFIG[ignore_path]['ignore'] == 'false':
             print_error('already un-ignored', ignore_path)
             return
-        config[ignore_path]['ignore'] = 'false'
+        REPOS_CONFIG[ignore_path]['ignore'] = 'false'
         changed = True
     if changed:
-        write_config()
+        write_repos_config()
 
 
 @cli.command()
@@ -683,12 +727,11 @@ def showclone(include_existing: bool, include_ignored: bool):
     """
     Show "git clone" commands needed to clone missing repos.
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     paths = get_paths([], include_ignored=include_ignored)
     for path in paths:
         if include_existing or not os.path.isdir(os.path.join(path, '.git')):
-            print('git clone {} {}'.format(config[path]['url'], path))
+            print('git clone {} {}'.format(REPOS_CONFIG[path]['url'], path))
     sys.exit()
 
 
@@ -702,7 +745,6 @@ def fetch(path: tuple, include_ignored: bool, progress: bool):
     """
     Fetch from origin.
     """
-    read_config()
     paths_to_fetch = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_fetch) == 0:
         return  # might want to chain commands...
@@ -725,7 +767,6 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
     Pull from origin (if no local changes).
     Hint: run "gitstat fetch" first.
     """
-    read_config()
     paths_to_check: List[str] = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_check) == 0:
         return  # might want to chain commands...
@@ -754,12 +795,11 @@ def is_tracked(path: tuple, quiet_if_tracked: bool):
     """
     Show whether repo(s) are tracked by gitstat.
     """
-    global config
-    read_config()
+    global REPOS_CONFIG
     for path_to_check in path:
         if path_to_check.endswith('/.git'):
             path_to_check = path_to_check[:-5]
-        if path_to_check not in config.sections():
+        if path_to_check not in REPOS_CONFIG.sections():
             print_error('not being tracked', path_to_check)
             continue
         if not quiet_if_tracked:
