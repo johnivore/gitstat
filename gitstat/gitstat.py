@@ -513,7 +513,7 @@ def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
         paths = [x for x in REPOS_CONFIG.sections()]
     new_path_list: List[str] = []
     for path in paths:
-        if REPOS_CONFIG.has_section(path) and REPOS_CONFIG[path]['ignore'] == 'true' and not include_ignored:
+        if REPOS_CONFIG.has_section(path) and REPOS_CONFIG.getboolean(path, 'ignore', fallback=False) and not include_ignored:
             continue
         if not os.path.isdir(path):
             print_error('not found', path)
@@ -687,7 +687,7 @@ def ignore(path: tuple):
         if ignore_path not in REPOS_CONFIG.sections():
             print_error('not being tracked', ignore_path)
             continue
-        if REPOS_CONFIG[ignore_path]['ignore'] == 'true':
+        if REPOS_CONFIG.getboolean(ignore_path, 'ignore', fallback=False):
             print_error('already ignored', ignore_path)
             return
         REPOS_CONFIG[ignore_path]['ignore'] = 'true'
@@ -709,7 +709,7 @@ def unignore(path: tuple):
         if ignore_path not in REPOS_CONFIG.sections():
             print_error('not being tracked', ignore_path)
             continue
-        if REPOS_CONFIG[ignore_path]['ignore'] == 'false':
+        if not REPOS_CONFIG.getboolean(ignore_path, 'ignore', fallback=False):
             print_error('already un-ignored', ignore_path)
             return
         REPOS_CONFIG[ignore_path]['ignore'] = 'false'
