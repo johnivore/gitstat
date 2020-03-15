@@ -72,7 +72,10 @@ OUTPUT_MESSAGES = {
     GitStatus.ERROR_ORIGIN_URL: 'error in origin URL',
 }
 
+# Default colors; more or less following git-prompt's colorization
 COLORS = {
+    # stash: green
+    # conflicts: red
     GitStatus.UNSTAGED: ColorCode('green').code,
     GitStatus.UNCOMMITTED: ColorCode('yellow').code,
     GitStatus.UNTRACKED: ColorCode('red').code,
@@ -110,17 +113,24 @@ def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, st
             print('\033[0;31m{}\033[0m'.format(stderr.decode().strip()))
 
 
+def config_path() -> Path:
+    """
+    Returns: the Path to our config directory.
+    """
+    if 'XDG_CONFIG_HOME' in os.environ:
+        path = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat')
+    else:
+        path = Path(Path.home(), '.config', 'gitstat')
+    return path
+
+
 def repos_config_filename() -> Path:
     """
     Get the path to our repos config file.
 
     Returns: the Path to the repos config file
     """
-    if 'XDG_CONFIG_HOME' in os.environ:
-        filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat', 'repos.conf')
-    else:
-        filename = Path(Path.home(), '.config', 'gitstat', 'repos.conf')
-    return filename
+    return config_path() / 'repos.conf'
 
 
 def read_repos_config():
@@ -150,16 +160,13 @@ def options_config_filename() -> Path:
 
     Returns: the Path to the options config file
     """
-    if 'XDG_CONFIG_HOME' in os.environ:
-        filename = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat', 'gitstat.conf')
-    else:
-        filename = Path(Path.home(), '.config', 'gitstat', 'gitstat.conf')
-    return filename
+    return config_path() / 'gitstat.conf'
 
 
 def read_options_config():
     """
     Read config file into global "OPTIONS_CONFIG" var.
+    Updates COLORS if any colors are specified in the config.
     """
     global OPTIONS_CONFIG
     filename = options_config_filename()
@@ -185,7 +192,7 @@ def read_options_config():
             COLORS[git_status] = color_code
 
 
-def colorize_status(status: GitStatus, use_color: bool = True):
+def colorize_status(status: GitStatus, use_color: bool = True) -> color:
     if not use_color:
         return OUTPUT_MESSAGES[status]
     c = COLORS[status] if status in COLORS else 'red'

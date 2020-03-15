@@ -1,5 +1,15 @@
 # Gitstat Changelog
 
+## UNRELEASED
+
+### Added
+
+* Add ability to customize colors
+
+### Changed
+
+* Split config file into two: one for tracked repos, the other for options (currently just customized colors)
+
 ## [0.3.0] 2020-03-14
 
 ### Added
