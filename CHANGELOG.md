@@ -4,11 +4,11 @@
 
 ### Added
 
-* Add ability to customize colors
+* Add ability to customize color and style of output
 
 ### Changed
 
-* Split config file into two: one for tracked repos, the other for options (currently just customized colors)
+* Split config file into two: one for tracked repos, the other for options (currently just customized colors/styles)
 
 ## [0.3.0] 2020-03-14
 

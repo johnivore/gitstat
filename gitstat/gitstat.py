@@ -186,8 +186,13 @@ def read_options_config():
             if option.endswith('_STYLE'):
                 is_style = True
                 option = option[:-6]
-            else:
+            elif option.endswith('_COLOR'):
                 is_style = False
+                option = option[:-6]
+            else:
+                # invalid
+                print('"{}" is not a valid option'.format(option))
+                continue
             # find the matching GitStatus
             try:
                 git_status = getattr(GitStatus, option)
@@ -202,7 +207,7 @@ def read_options_config():
                 continue
             # it's a color, not a style; could be (r, g, b), #123456, or a color name
             try:
-                if '(' in value:
+                if '(' in value:  # (r, g, b) tuple
                     value = literal_eval(value)
                 color_code = ColorCode(value).code
             except ValueError:
