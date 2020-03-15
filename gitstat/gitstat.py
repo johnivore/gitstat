@@ -34,6 +34,7 @@ import click
 from click_default_group import DefaultGroup
 from tqdm import tqdm
 from colr import color, ColorCode
+import colr.codes
 from . import VERSION
 
 
@@ -82,6 +83,11 @@ COLORS = {
     GitStatus.UNPUSHED: ColorCode('cyan').code,
     GitStatus.PULL_REQUIRED: ColorCode('magenta').code,
     GitStatus.UP_TO_DATE: ColorCode('green').code,
+}
+
+COLOR_STYLES = {
+    GitStatus.DIVERGED: 'bold',
+    GitStatus.PULL_REQUIRED: 'italic',
 }
 
 # Gitstat uses two config files:
@@ -166,9 +172,9 @@ def options_config_filename() -> Path:
 def read_options_config():
     """
     Read config file into global "OPTIONS_CONFIG" var.
-    Updates COLORS if any colors are specified in the config.
+    Updates COLORS and COLOR_STYLES if any colors/styles are specified in the config.
     """
-    global OPTIONS_CONFIG
+    global OPTIONS_CONFIG, COLORS, COLOR_STYLES
     filename = options_config_filename()
     if filename.is_file():
         OPTIONS_CONFIG.read(filename)
@@ -176,13 +182,26 @@ def read_options_config():
     if 'colors' in OPTIONS_CONFIG:
         for option in OPTIONS_CONFIG['colors']:
             option = option.upper()  # ConfigParser converts option strings to lowercase
+            value = OPTIONS_CONFIG['colors'][option]
+            if option.endswith('_STYLE'):
+                is_style = True
+                option = option[:-6]
+            else:
+                is_style = False
+            # find the matching GitStatus
             try:
                 git_status = getattr(GitStatus, option)
             except AttributeError:
                 print('"{}" is not a valid status'.format(option))
                 continue
+            if is_style:
+                if value not in colr.codes['style']:
+                    print('"{}" is an invalid style code'.format(value))
+                    continue
+                COLOR_STYLES[git_status] = value
+                continue
+            # it's a color, not a style; could be (r, g, b), #123456, or a color name
             try:
-                value = OPTIONS_CONFIG['colors'][option]
                 if '(' in value:
                     value = literal_eval(value)
                 color_code = ColorCode(value).code
@@ -195,8 +214,9 @@ def read_options_config():
 def colorize_status(status: GitStatus, use_color: bool = True) -> color:
     if not use_color:
         return OUTPUT_MESSAGES[status]
-    c = COLORS[status] if status in COLORS else 'red'
-    return color(OUTPUT_MESSAGES[status], fore=c)
+    fore = COLORS[status] if status in COLORS else 'red'
+    style = COLOR_STYLES[status] if status in COLOR_STYLES else 'normal'
+    return color(OUTPUT_MESSAGES[status], fore=fore, style=style)
 
 
 def fetch_from_origin(path: str) -> Union[str, int]:
