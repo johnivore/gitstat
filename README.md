@@ -102,8 +102,6 @@ There are two config files, `repos.conf` which contains the list of all repos th
 
 You can run `gitstat config` to show the locations of the files and colorization options:
 
-    $ gitstat config
-
 ![gitstat colors](images/screenshots/colors.png)
 
 ```ini
