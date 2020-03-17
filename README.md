@@ -96,6 +96,35 @@ Gitstat can do more.  To get help with individual commands:
     gitstat check --help
 
 
+## Color customization
+
+There are two config files, `repos.conf` which contains the list of all repos that Gitstat is tracking, and `gitstat.conf` which is used to configure Gitstat (currently it's just for colorization).  The config files like under `$XDG_CONFIG_HOME/gitstat/` (usually `~/.config/gitstat/`).
+
+You can run `gitstat config` to show the locations of the files and colorization options:
+
+    $ gitstat config
+
+![gitstat colors](images/screenshots/colors.png)
+
+```ini
+# gitstat.conf
+
+# Run "gitstat config" to show the "Status" list and the default colors.
+# For each Status, a COLOR and STYLE can be specified.
+# STYLES can be: bold, dim, italic, underline, flash, reverse
+# COLORS can be:
+#   - a 6-hex string  #123456
+#   - an RGB tuple    (255, 0, 0)
+#   - a name          red
+
+[colors]
+# UNTRACKED_COLOR = (255, 0, 0)
+# UNTRACKED_STYLE = bold
+# PULL_REQUIRED_COLOR = #00FF11
+# UNCOMMITTED_COLOR = cyan
+```
+
+
 ## Tips & tricks
 
 ### Using with scripts
@@ -115,11 +144,6 @@ If moving to a new computer, or sharing Gitstat's config between multiple comput
 ### Are you tracking all the repos you want to track?
 
     find ~/ -type d -name .git | xargs gitstat is-tracked --quiet-if-tracked
-
-
-## Config file
-
-The config file, which contains the list of tracked repos, is located at `$XDG_CONFIG_HOME/gitstat.conf` (usually `~/.config/gitstat.conf`).
 
 
 ## License
