@@ -5,6 +5,7 @@
 ### Added
 
 * Add ability to customize color and style of output
+* Add 'colors' command
 
 ### Changed
 
@@ -14,7 +15,7 @@
 
 ### Added
 
-* Add --color/--no-color options
+* Add `--color/--no-color` options to 'check'
 
 ### Changed
 
@@ -43,7 +44,7 @@
 
 ### Changed
 
-* Fix bug where "check --quiet" would always skip ignored repos
+* Fix bug where 'check --quiet' would always skip ignored repos
 
 
 ## [0.1.1] 2020-03-05

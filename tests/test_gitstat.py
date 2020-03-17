@@ -13,7 +13,6 @@ def test():
             print('matching message for {} not found.'.format(status))
             assert False
     # check colr styles exist
-    print(gitstat.COLOR_STYLES)
     for status in gitstat.COLOR_STYLES:
         if gitstat.COLOR_STYLES[status] not in colr.codes['style']:
             print('invalid colr style: {}'.format(gitstat.COLOR_STYLES[status]))

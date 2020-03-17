@@ -33,7 +33,7 @@ from ast import literal_eval
 import click
 from click_default_group import DefaultGroup
 from tqdm import tqdm
-from colr import color, ColorCode
+from colr import color, ColorCode, Colr
 import colr.codes
 from . import VERSION
 
@@ -74,7 +74,7 @@ OUTPUT_MESSAGES = {
 }
 
 # Default colors; more or less following git-prompt's colorization
-COLORS = {
+DEFAULT_COLORS = {
     # stash: green
     # conflicts: red
     GitStatus.UNSTAGED: ColorCode('green').code,
@@ -84,11 +84,13 @@ COLORS = {
     GitStatus.PULL_REQUIRED: ColorCode('magenta').code,
     GitStatus.UP_TO_DATE: ColorCode('green').code,
 }
+COLORS = DEFAULT_COLORS.copy()
 
-COLOR_STYLES = {
+DEFAULT_COLOR_STYLES = {
     GitStatus.DIVERGED: 'bold',
     GitStatus.PULL_REQUIRED: 'italic',
 }
+COLOR_STYLES = DEFAULT_COLOR_STYLES.copy()
 
 # Gitstat uses two config files:
 #   1. Gitstat options
@@ -216,12 +218,16 @@ def read_options_config():
             COLORS[git_status] = color_code
 
 
-def colorize_status(status: GitStatus, use_color: bool = True) -> color:
+def colorize_status(status: GitStatus, use_defaults: bool = False, use_color: bool = True) -> Colr:
     if not use_color:
         return OUTPUT_MESSAGES[status]
-    fore = COLORS[status] if status in COLORS else 'red'
-    style = COLOR_STYLES[status] if status in COLOR_STYLES else 'normal'
-    return color(OUTPUT_MESSAGES[status], fore=fore, style=style)
+    if use_defaults:
+        fore = DEFAULT_COLORS[status] if status in DEFAULT_COLORS else 'red'
+        style = DEFAULT_COLOR_STYLES[status] if status in DEFAULT_COLOR_STYLES else 'normal'
+    else:
+        fore = COLORS[status] if status in COLORS else 'red'
+        style = COLOR_STYLES[status] if status in COLOR_STYLES else 'normal'
+    return Colr(OUTPUT_MESSAGES[status], fore=fore, style=style)
 
 
 def fetch_from_origin(path: str) -> Union[str, int]:
@@ -836,3 +842,17 @@ def is_tracked(path: tuple, quiet_if_tracked: bool):
             continue
         if not quiet_if_tracked:
             print_error('is being tracked', path_to_check)
+
+
+@cli.command()
+def colors():
+    """
+    Print default and customized colors.
+    """
+    width = max(len(OUTPUT_MESSAGES[x]) for x in OUTPUT_MESSAGES)
+    print('{default}  {customized}'.format(default=Colr('Default color', style='underline').rjust(width),
+                                           customized=Colr('Customized color', style='underline')))
+    for git_status in OUTPUT_MESSAGES:
+        print('{default_color}  {customized_color}'.format(
+              default_color=colorize_status(git_status, use_defaults=True).rjust(width),
+              customized_color=colorize_status(git_status, use_defaults=False)))
