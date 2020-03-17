@@ -677,7 +677,7 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
         for item in sorted(result, key=itemgetter('path')):
-            changes = Colr(', ', fore=use_color).join(colorize_status(i, use_color=use_color) for i in item['changes']).strip()
+            changes = Colr(', ', fore=None).join(colorize_status(i, use_color=use_color) for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
 
 
