@@ -1,11 +1,11 @@
 # Gitstat Changelog
 
-## UNRELEASED
+## [0.4.0] 2020-03-17
 
 ### Added
 
 * Add ability to customize color and style of output
-* Add 'colors' command
+* Add 'config' command
 * Auto-create sample config if it doesn't exist
 
 ### Changed
