@@ -6,6 +6,7 @@
 
 * Add ability to customize color and style of output
 * Add 'colors' command
+* Auto-create sample config if it doesn't exist
 
 ### Changed
 

@@ -33,7 +33,7 @@ from ast import literal_eval
 import click
 from click_default_group import DefaultGroup
 from tqdm import tqdm
-from colr import color, ColorCode, Colr
+from colr import Colr, ColorCode
 import colr.codes
 from . import VERSION
 
@@ -178,8 +178,25 @@ def read_options_config():
     """
     global OPTIONS_CONFIG, COLORS, COLOR_STYLES
     filename = options_config_filename()
-    if filename.is_file():
-        OPTIONS_CONFIG.read(filename)
+    if not filename.is_file():
+        with open(filename, 'w') as writer:
+            writer.write("""# gitstat.conf
+
+# Run "gitstat config" to show the "Status" list and the default colors.
+# For each Status, a COLOR and STYLE can be specified.
+# STYLES can be: bold, dim, italic, underline, flash, reverse
+# COLORS can be:
+#   - a 6-hex string  #123456
+#   - an RGB tuple    (255, 0, 0)
+#   - a name          red
+
+[colors]
+# UNTRACKED_COLOR = (255, 0, 0)
+# UNTRACKED_STYLE = bold
+# PULL_REQUIRED_COLOR = #00FF11
+# UNCOMMITTED_COLOR = cyan
+""")
+    OPTIONS_CONFIG.read(filename)
     # update colors
     if 'colors' in OPTIONS_CONFIG:
         for option in OPTIONS_CONFIG['colors']:
@@ -632,10 +649,10 @@ def cli():
               help='Be quiet; return 1 if any repo has changes, else return 0.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
               help='Show progress bar.')
-@click.option('--color/--no-color', default=True, help='Colorize output.')
+@click.option('--color/--no-color', 'use_color', default=True, help='Colorize output.')
 @click.pass_context
 def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool,
-          color: bool):
+          use_color: bool):
     """
     Check repo(s).
     """
@@ -660,7 +677,7 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
         for item in sorted(result, key=itemgetter('path')):
-            changes = ', '.join(colorize_status(i, use_color=color) for i in item['changes']).strip()
+            changes = Colr(', ', fore=use_color).join(colorize_status(i, use_color=use_color) for i in item['changes']).strip()
             print('{path:{width}} {changes}'.format(path=item['path'], width=width, changes=changes))
 
 
@@ -845,14 +862,21 @@ def is_tracked(path: tuple, quiet_if_tracked: bool):
 
 
 @cli.command()
-def colors():
+def config():
     """
-    Print default and customized colors.
+    Show configuration information.
     """
-    width = max(len(OUTPUT_MESSAGES[x]) for x in OUTPUT_MESSAGES)
-    print('{default}  {customized}'.format(default=Colr('Default color', style='underline').rjust(width),
-                                           customized=Colr('Customized color', style='underline')))
+    print('Gitstat config: {}'.format(options_config_filename()))
+    print('  Repos config: {}'.format(repos_config_filename()))
+    print()
+    status_width = max(len(str(x)) for x in GitStatus)
+    msg_width = max(len(OUTPUT_MESSAGES[x]) for x in OUTPUT_MESSAGES)
+    print('{status}  {default}  {customized}'.format(
+        status=Colr('Status', style='underline').ljust(status_width),
+        default=Colr('Default color', style='underline').ljust(msg_width),
+        customized=Colr('Customized color', style='underline')))
     for git_status in OUTPUT_MESSAGES:
-        print('{default_color}  {customized_color}'.format(
-              default_color=colorize_status(git_status, use_defaults=True).rjust(width),
-              customized_color=colorize_status(git_status, use_defaults=False)))
+        print('{status}  {default_color}  {customized_color}'.format(
+            status=str(git_status).ljust(status_width),
+            default_color=colorize_status(git_status, use_defaults=True).ljust(msg_width),
+            customized_color=colorize_status(git_status, use_defaults=False)))
