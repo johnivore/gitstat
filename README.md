@@ -98,7 +98,7 @@ Gitstat can do more.  To get help with individual commands:
 
 ## Color customization
 
-There are two config files, `repos.conf` which contains the list of all repos that Gitstat is tracking, and `gitstat.conf` which is used to configure Gitstat (currently it's just for colorization).  The config files like under `$XDG_CONFIG_HOME/gitstat/` (usually `~/.config/gitstat/`).
+There are two config files, `repos.conf` which contains the list of all repos that Gitstat is tracking, and `gitstat.conf` which is used to configure Gitstat (currently it's just for colorization).  The config files live under `$XDG_CONFIG_HOME/gitstat/` (usually `~/.config/gitstat/`).
 
 You can run `gitstat config` to show the locations of the files and colorization options:
 
