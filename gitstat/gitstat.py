@@ -551,7 +551,7 @@ def checkrepo_bool(path: str, even_if_uptodate: bool = False) -> Union[bool, int
     return False if result is None else True
 
 
-def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
+def get_paths(paths: List[str], include_ignored: bool, missing_ok: bool = False) -> List[str]:
     """
     Return a list of strings representing zero or more paths to git repos.
     Paths are checked if they exist and if they are git repos.
@@ -560,6 +560,7 @@ def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
     Args:
         path (List[str]): The paths to the git repos
         include_ignored (bool): whether to include repos ignored in the config
+        missing_ok (bool): if True, don't skip & show and error missing repos
 
     Returns:
         A list of str of paths to git repos
@@ -570,12 +571,14 @@ def get_paths(paths: List[str], include_ignored: bool) -> List[str]:
     for path in paths:
         if REPOS_CONFIG.has_section(path) and REPOS_CONFIG.getboolean(path, 'ignore', fallback=False) and not include_ignored:
             continue
-        if not os.path.isdir(path):
-            print_error('not found', path)
-        elif not os.path.isdir(os.path.join(path, '.git')):
-            print_error('not a git directory', path)
-        else:
-            new_path_list.append(path)
+        if not missing_ok:
+            if not os.path.isdir(path):
+                print_error('not found', path)
+                continue
+            elif not os.path.isdir(os.path.join(path, '.git')):
+                print_error('not a git directory', path)
+                continue
+        new_path_list.append(path)
     return new_path_list
 
 
@@ -783,9 +786,9 @@ def showclone(include_existing: bool, include_ignored: bool):
     Show "git clone" commands needed to clone missing repos.
     """
     global REPOS_CONFIG
-    paths = get_paths([], include_ignored=include_ignored)
+    paths = get_paths([], include_ignored=include_ignored, missing_ok=True)
     for path in paths:
-        if include_existing or not os.path.isdir(os.path.join(path, '.git')):
+        if include_existing or not (Path(path) / '.git').is_dir():
             print('git clone {} {}'.format(REPOS_CONFIG[path]['url'], path))
     sys.exit()
 
