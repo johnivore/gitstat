@@ -276,7 +276,6 @@ def pull_from_origin(path: str) -> Union[str, int]:
         On success: the path (str) (because with multithreading we want to display our progress)
         On failure: -1
     """
-    print(f'pulling {path}')
     result = subprocess.run(['git', 'pull', '--quiet'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print_error(path, 'error fetching; "git pull" output follows:', result.stdout, result.stderr)
