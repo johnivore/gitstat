@@ -1,5 +1,12 @@
 # Gitstat Changelog
 
+## [0.4.1] UNRELEASED
+
+### Changed
+
+* Fix bug where 'showclone' didn't work correctly
+* 'pull' no longer prints paths while pulling (which made the progress bar ugly)
+
 ## [0.4.0] 2020-03-17
 
 ### Added
