@@ -1,6 +1,6 @@
 # Gitstat Changelog
 
-## [0.4.1] UNRELEASED
+## [0.4.1] 2020-03-26
 
 ### Changed
 
