@@ -5,6 +5,14 @@ import gitstat
 with open('README.md') as fh:
     long_description = fh.read()
 
+# NOTE: install dev requirements with: pip install --editable .[dev]
+
+requirements = [
+    'click',
+    'click-default-group',
+    'colr',
+    'tqdm'
+]
 
 setup(
     name='gitstat-johnivore',
@@ -30,13 +38,13 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     packages=find_packages(),
+    install_requires=requirements,
+    extras_require={
+        'dev': [
+            'pytest'
+        ]
+    },
     include_package_data=True,
-    install_requires=[
-        'Click',
-        'click-default-group',
-        'colr',
-        'tqdm',
-    ],
     entry_points="""
         [console_scripts]
         gitstat=gitstat.gitstat:cli
