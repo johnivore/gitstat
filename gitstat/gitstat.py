@@ -121,24 +121,13 @@ def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, st
             print('\033[0;31m{}\033[0m'.format(stderr.decode().strip()))
 
 
-def config_path() -> Path:
-    """
-    Returns: the Path to our config directory.
-    """
-    if 'XDG_CONFIG_HOME' in os.environ:
-        path = Path(os.environ['XDG_CONFIG_HOME'], 'gitstat')
-    else:
-        path = Path(Path.home(), '.config', 'gitstat')
-    return path
-
-
 def repos_config_filename() -> Path:
     """
     Get the path to our repos config file.
 
     Returns: the Path to the repos config file
     """
-    return config_path() / 'repos.conf'
+    return Path(click.get_app_dir('gitstat')) / 'repos.conf'
 
 
 def read_repos_config():
@@ -168,7 +157,7 @@ def options_config_filename() -> Path:
 
     Returns: the Path to the options config file
     """
-    return config_path() / 'gitstat.conf'
+    return Path(click.get_app_dir('gitstat')) / 'gitstat.conf'
 
 
 def read_options_config():
