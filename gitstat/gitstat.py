@@ -453,7 +453,7 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
 
     Returns:
         On success: a Dict of {'path': path, 'changes': List of GitStat or None})
-            If "up-to-date" == False and there are no changes, 'changes' will be None; else 'up-to-date' will
+            If even_if_uptodate == False and there are no changes, 'changes' will be None; else 'up-to-date' will
             be included in the list.
         On failure: -1
     """
