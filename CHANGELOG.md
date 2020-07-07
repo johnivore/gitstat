@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [unreleased] 2020-07-06
+
+### Changed
+
+* Get config directory using Click to support non-Unix-like operating systems
+
 ## [0.4.1] 2020-03-26
 
 ### Changed
