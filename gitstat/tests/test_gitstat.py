@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
+
+import colr.codes
+
 from gitstat import gitstat
 from gitstat.gitstat import GitStatus
-import colr.codes
 
 
 def test():

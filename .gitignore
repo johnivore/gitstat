@@ -1,11 +1,22 @@
+# build
 *.egg-info
-*.pyc
-venv
 build
 dist
 
-.tox
-
+# editors
 .idea
 .vscode
+
+# python & tools
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.venv
+venv
+.tox
 .mypy_cache

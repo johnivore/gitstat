@@ -1,10 +1,12 @@
 # Gitstat Changelog
 
-## [unreleased] 2020-07-06
+## [0.4.2] 2020-12-10
 
 ### Changed
 
 * Get config directory using Click to support non-Unix-like operating systems
+* Use Poetry for dependency management
+* Add lint & test scripts
 
 ## [0.4.1] 2020-03-26
 

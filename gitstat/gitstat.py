@@ -18,23 +18,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
-import sys
-from typing import List, Tuple, Dict, Optional, Union
-from enum import Enum, unique, auto
-import subprocess
-from multiprocessing import Pool, freeze_support, cpu_count
-from itertools import repeat
-from pathlib import Path
 import configparser
-from operator import itemgetter
-from textwrap import dedent
+import os
+import subprocess
+import sys
 from ast import literal_eval
+from enum import Enum, auto, unique
+from itertools import repeat
+from multiprocessing import Pool, cpu_count, freeze_support
+from operator import itemgetter
+from pathlib import Path
+from textwrap import dedent
+from typing import Dict, List, Optional, Tuple, Union
+
 import click
-from click_default_group import DefaultGroup
-from tqdm import tqdm
-from colr import Colr, ColorCode
 import colr.codes
+from click_default_group import DefaultGroup
+from colr import ColorCode, Colr
+from tqdm import tqdm
+
 from . import VERSION
 
 

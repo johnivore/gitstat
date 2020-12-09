@@ -13,6 +13,10 @@ Colr = "^0.9.1"
 tqdm = "^4.54.1"
 
 [tool.poetry.dev-dependencies]
+flake8 = "^3.8.4"
+pytest = "^6.1.2"
+coverage = "^5.3"
+isort = "^5.6.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -20,3 +24,20 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 gitstat = "gitstat.gitstat:cli"
+
+
+[tool.isort]
+# https://github.com/timothycrosley/isort
+# https://github.com/timothycrosley/isort/wiki/isort-Settings
+line_length = 88
+indent = '    '
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+
+[tool.coverage]
+# https://github.com/nedbat/coveragepy
+    [tool.coverage.run]
+    source = ["gitstat"]
+    branch = true
+    omit = ['']
