@@ -2,11 +2,14 @@
 
 ## [0.4.2] 2020-12-10
 
+### Added
+
+* Use Poetry for dependency management
+* Add lint & test scripts
+
 ### Changed
 
 * Get config directory using Click to support non-Unix-like operating systems
-* Use Poetry for dependency management
-* Add lint & test scripts
 
 ## [0.4.1] 2020-03-26
 
