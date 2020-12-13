@@ -25,7 +25,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 gitstat = "gitstat.gitstat:cli"
 
-
 [tool.isort]
 # https://github.com/timothycrosley/isort
 # https://github.com/timothycrosley/isort/wiki/isort-Settings
