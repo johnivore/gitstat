@@ -1,7 +1,10 @@
 #!/usr/bin/fish
 
+# setup:
+#     poetry add --dev coverage pytest
+
 # run this from the project root
-# ./scripts/test.fish
+#     ./scripts/test.fish
 
 set PROJECT gitstat
 
