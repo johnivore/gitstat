@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 gitstat.py
 
@@ -103,7 +104,7 @@ OPTIONS_CONFIG = configparser.ConfigParser()
 # -------------------------------------------------
 
 
-def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, stderr: Optional[bytes] = None):
+def print_error(message: str, repo_path: str, stdout: Optional[bytes] = None, stderr: Optional[bytes] = None) -> None:
     """
     Print an error message (e.g., from subprocess output).
 
@@ -132,20 +133,16 @@ def repos_config_filename() -> Path:
     return Path(click.get_app_dir('gitstat')) / 'repos.conf'
 
 
-def read_repos_config():
-    """
-    Read repos config file into global "REPOS_CONFIG" var.
-    """
+def read_repos_config() -> None:
+    """Read repos config file into global "REPOS_CONFIG" var."""
     global REPOS_CONFIG
     filename = repos_config_filename()
     if filename.is_file():
         REPOS_CONFIG.read(filename)
 
 
-def write_repos_config():
-    """
-    Write repos config file to global "REPOS_CONFIG" var.
-    """
+def write_repos_config() -> None:
+    """Write repos config file to global "REPOS_CONFIG" var."""
     global REPOS_CONFIG
     filename = repos_config_filename()
     filename.parent.mkdir(parents=True, exist_ok=True)
@@ -162,9 +159,10 @@ def options_config_filename() -> Path:
     return Path(click.get_app_dir('gitstat')) / 'gitstat.conf'
 
 
-def read_options_config():
+def read_options_config() -> None:
     """
     Read config file into global "OPTIONS_CONFIG" var.
+
     Updates COLORS and COLOR_STYLES if any colors/styles are specified in the config.
     """
     global OPTIONS_CONFIG, COLORS, COLOR_STYLES
@@ -407,6 +405,7 @@ def check_untracked_files(path: str) -> bool:
 def check_unpushed_commits(path: str) -> bool:
     """
     Determine whether there are unpushed commits.
+
     Note this just calls "git diff", so this will also return True
     if a pull from origin is required.
 
@@ -446,6 +445,7 @@ def get_repo_url(path: str) -> Union[str, int]:
 def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, None]:
     """
     Run various checks on a repo to determine its general state.
+
     If even_if_uptodate == False and there are no changes, return None;
     else return a dict of {'path': path, 'changes': List[GitStatus]}
 
@@ -523,6 +523,7 @@ def checkrepo(path: str, even_if_uptodate: bool = False) -> Union[Dict, int, Non
 def checkrepo_bool(path: str, even_if_uptodate: bool = False) -> Union[bool, int]:
     """
     Returns a bool if there are changes to the repo.
+
     This is just a wrapper for checkrepo(); it would be faster
     if we do the checks "manually" because we could bail as soon as
     one check indicated there are changes.  But this is simpler.
@@ -544,6 +545,7 @@ def checkrepo_bool(path: str, even_if_uptodate: bool = False) -> Union[bool, int
 def get_paths(paths: List[str], include_ignored: bool, missing_ok: bool = False) -> List[str]:
     """
     Return a list of strings representing zero or more paths to git repos.
+
     Paths are checked if they exist and if they are git repos.
     If paths is not empty, use them; otherwise, use paths being tracked in config.
 
@@ -573,9 +575,7 @@ def get_paths(paths: List[str], include_ignored: bool, missing_ok: bool = False)
 
 
 def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) -> List[Dict]:
-    """
-    return a tuple of tuple representing the output
-    """
+    """return a tuple of tuple representing the output"""
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -591,11 +591,7 @@ def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) ->
 
 
 def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progress_bar: bool) -> int:
-    """
-    return an int representing the return code with which we should exit:
-        0 for no changes
-        1 for changes
-    """
+    """return an int representing the return code with which we should exit: 0 for no changes; 1 for changes"""
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -612,7 +608,7 @@ def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progres
 
 @click.group(cls=DefaultGroup, default='check', default_if_no_args=True)
 @click.version_option(version=VERSION)
-def cli():
+def cli() -> None:
     """
     Succinctly display information about git repositories.
 
@@ -644,11 +640,9 @@ def cli():
               help='Show progress bar.')
 @click.option('--color/--no-color', 'use_color', default=True, help='Colorize output.')
 @click.pass_context
-def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool, quiet: bool, progress: bool,
+def check(ctx: click.Context, path: Tuple[str], include_all: bool, include_ignored: bool, quiet: bool, progress: bool,
           use_color: bool):
-    """
-    Check repo(s).
-    """
+    """Check repo(s)."""
     ctx.ensure_object(dict)
     if not path and len(REPOS_CONFIG.sections()) == 0:
         print(
@@ -661,11 +655,11 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
         ctx.fail(ctx.find_root().get_help())
     if quiet:
         int_result = check_paths_with_exit_code(get_paths(list(path), include_ignored=include_ignored),
-                                                include_uptodate=all, progress_bar=progress)
+                                                include_uptodate=include_all, progress_bar=progress)
         sys.exit(int_result)
     # everything went as expected!
     result: List[Dict] = check_paths(get_paths(list(path), include_ignored=include_ignored),
-                                     include_uptodate=all, progress_bar=progress)
+                                     include_uptodate=include_all, progress_bar=progress)
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
@@ -677,10 +671,8 @@ def check(ctx: click.Context, path: Tuple[str], all: bool, include_ignored: bool
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
                 required=True)
-def track(path: tuple):
-    """
-    Track repo(s).
-    """
+def track(path: tuple) -> None:
+    """Track repo(s)."""
     global REPOS_CONFIG
     changed = False
     for track_path in path:
@@ -706,10 +698,8 @@ def track(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
                 required=True)
-def untrack(path: tuple):
-    """
-    Untrack repo(s).
-    """
+def untrack(path: tuple) -> None:
+    """Untrack repo(s)."""
     global REPOS_CONFIG
     changed = False
     for untrack_path in path:
@@ -725,10 +715,8 @@ def untrack(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
                 required=True)
-def ignore(path: tuple):
-    """
-    Ignore repo(s).
-    """
+def ignore(path: tuple) -> None:
+    """Ignore repo(s)."""
     global REPOS_CONFIG
     changed = False
     for ignore_path in path:
@@ -747,10 +735,8 @@ def ignore(path: tuple):
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
                 required=True)
-def unignore(path: tuple):
-    """
-    Un-ignore repo(s).
-    """
+def unignore(path: tuple) -> None:
+    """Un-ignore repo(s)."""
     global REPOS_CONFIG
     changed = False
     for ignore_path in path:
@@ -771,10 +757,8 @@ def unignore(path: tuple):
               help='Include repos that already exist.')
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
               help='Include repos set by gitstat to be ignored.')
-def showclone(include_existing: bool, include_ignored: bool):
-    """
-    Show "git clone" commands needed to clone missing repos.
-    """
+def showclone(include_existing: bool, include_ignored: bool) -> None:
+    """Show "git clone" commands needed to clone missing repos."""
     global REPOS_CONFIG
     paths = get_paths([], include_ignored=include_ignored, missing_ok=True)
     for path in paths:
@@ -789,10 +773,8 @@ def showclone(include_existing: bool, include_ignored: bool):
               help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
               help='Show progress bar.')
-def fetch(path: tuple, include_ignored: bool, progress: bool):
-    """
-    Fetch from origin.
-    """
+def fetch(path: tuple, include_ignored: bool, progress: bool) -> None:
+    """Fetch from origin."""
     paths_to_fetch = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_fetch) == 0:
         return  # might want to chain commands...
@@ -810,11 +792,8 @@ def fetch(path: tuple, include_ignored: bool, progress: bool):
               help='Include repos set by gitstat to be ignored.')
 @click.option('-p', '--progress', type=bool, default=False, is_flag=True,
               help='Show progress bar.')
-def pull(path: tuple, include_ignored: bool, progress: bool):
-    """
-    Pull from origin (if no local changes).
-    Hint: run "gitstat fetch" first.
-    """
+def pull(path: tuple, include_ignored: bool, progress: bool) -> None:
+    """Pull from origin (if no local changes).  Hint: run "gitstat fetch" first."""
     paths_to_check: List[str] = get_paths(list(path), include_ignored=include_ignored)
     if len(paths_to_check) == 0:
         return  # might want to chain commands...
@@ -839,10 +818,8 @@ def pull(path: tuple, include_ignored: bool, progress: bool):
 @click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
 @click.option('-q', '--quiet-if-tracked', type=bool, default=False, is_flag=True,
               help='Don\'t output anything if the repo is being tracked.')
-def is_tracked(path: tuple, quiet_if_tracked: bool):
-    """
-    Show whether repo(s) are tracked by gitstat.
-    """
+def is_tracked(path: tuple, quiet_if_tracked: bool) -> None:
+    """Show whether repo(s) are tracked by gitstat."""
     global REPOS_CONFIG
     for path_to_check in path:
         if path_to_check.endswith('/.git'):
@@ -855,10 +832,8 @@ def is_tracked(path: tuple, quiet_if_tracked: bool):
 
 
 @cli.command()
-def config():
-    """
-    Show configuration information.
-    """
+def config() -> None:
+    """Show configuration information."""
     print('Gitstat config: {}'.format(options_config_filename()))
     print('  Repos config: {}'.format(repos_config_filename()))
     print()

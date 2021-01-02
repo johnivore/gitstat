@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'gitstat'
-version = '0.4.1'
+version = '0.4.2'
 description = 'Succinctly display information about git repositories.'
 authors = ['John Begenisich <john.begenisich@outlook.com>']
 license = 'GPLv3+'
@@ -19,19 +19,38 @@ classifiers = [
 include = [
     'LICENSE',
 ]
+exclude = [
+    'PROJECT_NAME/tests'
+]
 
 [tool.poetry.dependencies]
-python = '>=3.6, <=3.9'
+python = '^3.6, ^3.7, ^3.8, ^3.9'
 click = '^7.1.2'
 click-default-group = '^1.2.2'
 Colr = '^0.9.1'
 tqdm = '^4.54.1'
 
 [tool.poetry.dev-dependencies]
-flake8 = '^3.8.4'
-pytest = '^6.1.2'
-coverage = '^5.3'
+coverage = '^5.3.1'
+pytest = '^6.2.1'
 isort = '^5.6.4'
+flake8 = '^3.8.4'
+flakehell = "^0.7.1"
+flake8-printf-formatting = "^1.1.0"
+flake8-bugbear = "^20.11.1"
+flake8-builtins = "^1.5.3"
+flake8-commas = "^2.0.0"
+flake8-quotes = "^3.2.0"
+toml = "^0.10.2"
+flake8-annotations = "^2.4.1"
+flake8-annotations-coverage = "^0.0.4"
+flake8-comprehensions = "^3.3.1"
+flake8-docstrings = "^1.5.0"
+flake8-fixme = "^1.1.1"
+flake8-markdown = "^0.2.0"
+flake8-use-fstring = "^1.1"
+flake8-variables-names = "^0.0.3"
+rope = "^0.18.0"
 
 [build-system]
 requires = ['poetry-core>=1.0.0']
@@ -41,7 +60,6 @@ build-backend = 'poetry.core.masonry.api'
 gitstat = 'gitstat.gitstat:cli'
 
 [tool.isort]
-# https://github.com/timothycrosley/isort
 # https://github.com/timothycrosley/isort/wiki/isort-Settings
 line_length = 88
 indent = '    '
@@ -55,3 +73,29 @@ force_grid_wrap = 0
     source = ['gitstat']
     branch = true
     omit = ['']
+
+# https://flakehell.readthedocs.io/
+[tool.flakehell]
+exclude = ["example.py", "setup.py", "README.rst"]
+max_line_length = 120
+show_source = true
+format = "grouped"
+
+[tool.flakehell.plugins]
+flake8-annotations = ["+*"]
+flake8-annotations-coverage = ["+*"]
+flake8-bugbear = ["+*"]
+flake8-builtins = ["+*"]
+flake8-commas = ["+*"]
+flake8-comprehensions = ["+*"]
+flake8-docstrings = ["+*"]
+flake8-fixme = ["+*"]
+flake8-markdown = ["+*"]
+flake8-printf-formatting = ["+*"]
+flake8-quotes = ["+*"]
+flake8-use-fstring = ["+*"]
+flake8-variables-names = ["+*"]
+pycodestyle = ["+*"]
+pyflakes = ["+*"]
+pylint = ["+*"]
+# pylint = ["+F*", "+E*", "-E0611", "-E1101", "-E0401", "-E1102", "-E1123"]
