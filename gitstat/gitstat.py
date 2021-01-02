@@ -43,6 +43,7 @@ from . import VERSION
 
 @unique
 class GitStatus(Enum):
+    """An Enum to hold various statuses about git repositories."""
     UNSTAGED = auto()
     UNCOMMITTED = auto()
     UNTRACKED = auto()
@@ -57,7 +58,7 @@ class GitStatus(Enum):
     NO_UPSTREAM_BRANCH = auto()
     ERROR_ORIGIN_URL = auto()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -575,7 +576,7 @@ def get_paths(paths: List[str], include_ignored: bool, missing_ok: bool = False)
 
 
 def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) -> List[Dict]:
-    """return a tuple of tuple representing the output"""
+    """Return a list of dicts representing the result of checking multiple git repos."""
     output: List[Dict] = []
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -591,7 +592,7 @@ def check_paths(paths: List[str], include_uptodate: bool, progress_bar: bool) ->
 
 
 def check_paths_with_exit_code(paths: List[str], include_uptodate: bool, progress_bar: bool) -> int:
-    """return an int representing the return code with which we should exit: 0 for no changes; 1 for changes"""
+    """Return an int representing the return code with which we should exit: 0 for no changes; 1 for changes."""
     exit_code: int = 0
     with Pool(processes=cpu_count()) as pool:
         with tqdm(total=len(paths), disable=not progress_bar, leave=False) as pbar:
@@ -641,7 +642,7 @@ def cli() -> None:
 @click.option('--color/--no-color', 'use_color', default=True, help='Colorize output.')
 @click.pass_context
 def check(ctx: click.Context, path: Tuple[str], include_all: bool, include_ignored: bool, quiet: bool, progress: bool,
-          use_color: bool):
+          use_color: bool) -> None:
     """Check repo(s)."""
     ctx.ensure_object(dict)
     if not path and len(REPOS_CONFIG.sections()) == 0:
