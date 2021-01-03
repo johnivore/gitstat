@@ -20,3 +20,6 @@ htmlcov/
 venv
 .tox
 .mypy_cache
+
+# excluding this for now because it's a mess...
+scripts/
