@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [0.4.5] 2021-01-03
+
+### Changed
+
+* Re-add package classifiers not copied from (now-deleted) setup.py
+
 ## [0.4.4] 2021-01-03
 
 ### Fixed

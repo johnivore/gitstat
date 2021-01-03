@@ -1,9 +1,9 @@
 [tool.poetry]
 name = 'gitstat'
-version = "0.4.4"
+version = "0.4.5"
 description = 'Succinctly display information about git repositories.'
 authors = ['John Begenisich <john.begenisich@outlook.com>']
-license = 'GPLv3+'
+license = 'GPL-3.0-or-later'
 readme = 'README.md'
 homepage = 'https://gitlab.com/johnivore/gitstat'
 repository = 'https://gitlab.com/johnivore/gitstat'
@@ -15,12 +15,19 @@ classifiers = [
     'Intended Audience :: System Administrators',
     'Operating System :: OS Independent',
     'Topic :: Software Development :: Version Control :: Git',
+    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3 :: Only',
 ]
 include = [
     'LICENSE',
 ]
 exclude = [
-    'PROJECT_NAME/tests'
+    'gitstat/tests'
 ]
 
 [tool.poetry.dependencies]
@@ -58,6 +65,10 @@ build-backend = 'poetry.core.masonry.api'
 
 [tool.poetry.scripts]
 gitstat = 'gitstat.gitstat:cli'
+
+[tool.jbtest]
+# this is used by scripts/test.py
+publish-repository = 'testpypi'
 
 [tool.isort]
 # https://github.com/timothycrosley/isort/wiki/isort-Settings
