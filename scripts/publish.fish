@@ -17,7 +17,7 @@ end
 poetry version $argv[1]
 set VERSION v(poetry version -s)
 
-git commit -am 'bumped version to $VERSION'
+git commit -am "bumped version to $VERSION"
 if test $status != 0 ; exit ; end
 
 git tag $VERSION
@@ -26,7 +26,10 @@ if test $status != 0 ; exit ; end
 git push --tags
 if test $status != 0 ; exit ; end
 
-poetry publish --build -r test.pypi.org
+poetry build
+if test $status != 0 ; exit ; end
+
+poetry publish -r testpypi
 if test $status != 0 ; exit ; end
 
 echo "\nSuccess!"
