@@ -50,8 +50,7 @@ and `gitstat pull` will pull from origin *only if* there are no local changes an
 
 ## Installation
 
-    git clone https://gitlab.com/johnivore/gitstat.git
-    pip install --user gitstat/
+    pip install --user -i https://test.pypi.org/simple/ gitstat
 
 
 ## Quick start
