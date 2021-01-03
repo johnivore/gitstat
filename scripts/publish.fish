@@ -8,9 +8,9 @@
 # 6. poetry publish ...
 
 if test (count $argv) != 1
-    echo "Usage:\n"
-    echo "1. Ensure you've updated CHANGELOG for the new version"
-    echo "2. Call this script with the same argument you would pass to 'poetry version' (see https://python-poetry.org/docs/cli/#version)"
+    echo "Usage:"
+    echo "  1. Ensure you've updated CHANGELOG for the new version"
+    echo "  2. Call this script with the same argument you would pass to 'poetry version' (see https://python-poetry.org/docs/cli/#version)"
     exit 1
 end
 
