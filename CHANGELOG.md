@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [0.4.4] 2021-01-03
+
+### Fixed
+
+* Fix `--all`
+
 ## [0.4.3] 2021-01-03
 
 ### Changed

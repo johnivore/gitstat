@@ -631,7 +631,7 @@ def cli() -> None:
 
 @cli.command()
 @click.argument('path', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
-@click.option('-a', '--all', type=bool, default=False, is_flag=True,
+@click.option('-a', '--all', 'all_', type=bool, default=False, is_flag=True,
               help='Include repos that are up-to-date.')
 @click.option('--include-ignored', type=bool, default=False, is_flag=True,
               help='Include repos set by gitstat to be ignored.')
@@ -641,7 +641,7 @@ def cli() -> None:
               help='Show progress bar.')
 @click.option('--color/--no-color', 'use_color', default=True, help='Colorize output.')
 @click.pass_context
-def check(ctx: click.Context, path: Tuple[str], include_all: bool, include_ignored: bool, quiet: bool, progress: bool,
+def check(ctx: click.Context, path: Tuple[str], all_: bool, include_ignored: bool, quiet: bool, progress: bool,
           use_color: bool) -> None:
     """Check repo(s)."""
     ctx.ensure_object(dict)
@@ -656,11 +656,11 @@ def check(ctx: click.Context, path: Tuple[str], include_all: bool, include_ignor
         ctx.fail(ctx.find_root().get_help())
     if quiet:
         int_result = check_paths_with_exit_code(get_paths(list(path), include_ignored=include_ignored),
-                                                include_uptodate=include_all, progress_bar=progress)
+                                                include_uptodate=all_, progress_bar=progress)
         sys.exit(int_result)
     # everything went as expected!
     result: List[Dict] = check_paths(get_paths(list(path), include_ignored=include_ignored),
-                                     include_uptodate=include_all, progress_bar=progress)
+                                     include_uptodate=all_, progress_bar=progress)
     if result:
         # print the array of {'path': path, 'changes': [changes]}
         width = max(len(x['path']) for x in result)
