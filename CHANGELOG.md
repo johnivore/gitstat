@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [0.4.3] 2021-01-03
+
+### Changed
+
+* Various PEP & packing / publishing fixes
+
 ## [0.4.2] 2020-12-10
 
 ### Added
