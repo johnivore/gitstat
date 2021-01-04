@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [0.4.6] 2021-01-05
+
+### Fixed
+
+* Fix Python version dependency in package information
+
 ## [0.4.5] 2021-01-03
 
 ### Changed
