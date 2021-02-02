@@ -68,7 +68,7 @@ OUTPUT_MESSAGES = {
     GitStatus.UNTRACKED: 'untracked files',
     GitStatus.UNPUSHED: 'unpushed commits',
     GitStatus.PULL_REQUIRED: 'pull required',
-    GitStatus.UP_TO_DATE: 'up to date',
+    GitStatus.UP_TO_DATE: 'up-to-date',
     GitStatus.URL_MISMATCH: 'URL mismatch',
     GitStatus.DIVERGED: 'DIVERGED',
     GitStatus.ERROR_FETCHING: 'error fetching',
