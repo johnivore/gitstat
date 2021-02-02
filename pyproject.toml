@@ -66,9 +66,10 @@ build-backend = 'poetry.core.masonry.api'
 [tool.poetry.scripts]
 gitstat = 'gitstat.gitstat:cli'
 
-[tool.jbtest]
-# this is used by scripts/test.py
+[tool.pysurp]
 publish-repository = 'testpypi'
+gitlab-release-netrc-host = 'gitlab.com'
+gitlab-project-id = 10135931
 
 [tool.isort]
 # https://github.com/timothycrosley/isort/wiki/isort-Settings
