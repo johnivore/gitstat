@@ -1,5 +1,11 @@
 # Gitstat Changelog
 
+## [0.4.7] 2021-07-24
+
+### Changed
+
+* Just bump module dependencies and move to github
+
 ## [0.4.6] 2021-01-05
 
 ### Fixed
