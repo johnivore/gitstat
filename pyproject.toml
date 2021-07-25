@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'pygitstat'
-version = "0.4.8"
+version = "0.5.0"
 description = 'Succinctly display information about git repositories.'
 authors = ['John Begenisich <john.begenisich@outlook.com>']
 license = 'GPL-3.0-or-later'
