@@ -4,8 +4,8 @@ from pathlib import Path
 
 import colr.codes
 
-from gitstat import gitstat
-from gitstat.gitstat import GitStatus
+from pygitstat import gitstat
+from pygitstat.gitstat import GitStatus
 
 
 def test():

@@ -27,7 +27,7 @@ include = [
     'LICENSE',
 ]
 exclude = [
-    'gitstat/tests'
+    'pygitstat/tests'
 ]
 
 [tool.poetry.dependencies]
@@ -62,7 +62,7 @@ requires = ['poetry-core>=1.0.0']
 build-backend = 'poetry.core.masonry.api'
 
 [tool.poetry.scripts]
-gitstat = 'gitstat.gitstat:cli'
+gitstat = 'pygitstat.gitstat:cli'
 
 [tool.pysurp]
 # gitlab-release-netrc-host = 'gitlab.com'
@@ -79,7 +79,7 @@ force_grid_wrap = 0
 [tool.coverage]
 # https://github.com/nedbat/coveragepy
     [tool.coverage.run]
-    source = ['gitstat']
+    source = ['pygitstat']
     branch = true
     omit = ['']
 
