@@ -50,7 +50,7 @@ and `gitstat pull` will pull from origin *only if* there are no local changes an
 
 ## Installation
 
-    pip install --user -i https://test.pypi.org/simple/ gitstat
+    pip install --user pygitstat
 
 
 ## Quick start
