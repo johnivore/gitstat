@@ -1,6 +1,6 @@
 [tool.poetry]
-name = 'gitstat'
-version = "0.4.7"
+name = 'pygitstat'
+version = "0.4.8"
 description = 'Succinctly display information about git repositories.'
 authors = ['John Begenisich <john.begenisich@outlook.com>']
 license = 'GPL-3.0-or-later'
@@ -65,7 +65,6 @@ build-backend = 'poetry.core.masonry.api'
 gitstat = 'gitstat.gitstat:cli'
 
 [tool.pysurp]
-publish-repository = 'pypi'
 # gitlab-release-netrc-host = 'gitlab.com'
 # gitlab-project-id = 10135931
 
