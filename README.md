@@ -26,15 +26,17 @@ Options:
   --help     Show this message and exit.
 
 Commands:
-  check*      Check repo(s).
-  fetch       Fetch from origin.
-  ignore      Ignore repo(s).
-  is-tracked  Show whether one or more repos are tracked by gitstat.
-  pull        Pull from origin (if no local changes).
-  showclone   Show "git clone" commands needed to clone missing repos.
-  track       Track repo(s).
-  unignore    Un-ignore repo(s).
-  untrack     Untrack repo(s).
+  check*         Check repo(s).
+  config         Show configuration information.
+  fetch          Fetch from origin.
+  ignore         Ignore repo(s).
+  is-tracked     Show whether repo(s) are tracked by gitstat.
+  pull           Pull from origin (if no local changes).
+  showclone      Show "git clone" commands needed to clone missing repos.
+  track          Track repo(s).
+  unignore       Un-ignore repo(s).
+  untrack        Untrack repo(s).
+  update-origin  Update repo(s) origins in gitstat config.
 ```
 
 Gitstat has been designed with being careful in mind.
