@@ -833,6 +833,24 @@ def is_tracked(path: tuple, quiet_if_tracked: bool) -> None:
 
 
 @cli.command()
+@click.argument('path', nargs=-1, type=click.Path(file_okay=False, dir_okay=True, resolve_path=True), required=True)
+def update_origin(path: tuple) -> None:
+    """Update repo(s) origins in gitstat config."""
+    global REPOS_CONFIG
+    paths_to_check: List[str] = get_paths(list(path), include_ignored=True)
+    if len(paths_to_check) == 0:
+        return
+    for result in check_paths(paths_to_check, include_uptodate=False, progress_bar=False):
+        if 'changes' not in result or GitStatus.URL_MISMATCH not in result['changes']:
+            print_error('No URL mismatch', result['path'])
+            continue
+        new_origin: str = get_repo_url(result['path'])
+        print(f"{result['path']}: Updating origin -> {new_origin}")
+        REPOS_CONFIG[result['path']]['url'] = new_origin
+    write_repos_config()
+
+
+@cli.command()
 def config() -> None:
     """Show configuration information."""
     print('Gitstat config: {}'.format(options_config_filename()))
